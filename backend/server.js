@@ -3,6 +3,9 @@ const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
+const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
 const app = express();
 const port = 3000;
 
@@ -49,6 +52,22 @@ function checkAdmin(req, res, next) {
   }
   next();
 }
+
+// Создать папку для фото товаров, если не существует
+const uploadDir = path.join(__dirname, 'uploads/products');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+// Отдача статики для фото товаров
+app.use('/uploads/products', express.static(uploadDir));
+
+// Создать папку для фото категорий, если не существует
+const uploadCatDir = path.join(__dirname, 'uploads/categories');
+if (!fs.existsSync(uploadCatDir)) {
+  fs.mkdirSync(uploadCatDir, { recursive: true });
+}
+// Отдача статики для фото категорий
+app.use('/uploads/categories', express.static(uploadCatDir));
 
 // CRUD для пользователей
 // Получить всех пользователей
@@ -210,6 +229,14 @@ app.put('/api/profile/:id', async (req, res) => {
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
+
+// Подключение роутов для товаров
+const productsRouter = require('./products')(db, checkAdmin);
+app.use('/api/products', productsRouter);
+
+// Подключение роутера для категорий
+const categoriesRouter = require('./categories')(db, checkAdmin);
+app.use('/api/categories', categoriesRouter);
 
 app.listen(port, () => {
   console.log(`Сервер запущен на http://localhost:${port}`);

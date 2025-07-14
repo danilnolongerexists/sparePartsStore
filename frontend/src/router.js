@@ -4,12 +4,16 @@ import Login from './components/Login.vue';
 import Register from './components/Register.vue';
 import MainPage from './components/MainPage.vue';
 import ProfilePage from './components/ProfilePage.vue';
+import ProductManagement from './components/ProductManagement.vue';
+import CategoryManagement from './components/CategoryManagement.vue';
 
 const routes = [
   { path: '/', component: MainPage },
   { path: '/login', component: Login },
   { path: '/register', component: Register },
   { path: '/users', component: UserManagement, meta: { requiresAuth: true } },
+  { path: '/products', component: ProductManagement, meta: { requiresAuth: true } },
+  { path: '/categories', component: CategoryManagement, meta: { requiresAuth: true } },
   { path: '/profile', component: ProfilePage, meta: { requiresAuth: true } },
 ];
 

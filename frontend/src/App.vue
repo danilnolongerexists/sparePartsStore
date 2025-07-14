@@ -1,9 +1,20 @@
 <script setup>
-// router-view используется для отображения страниц
+import { computed } from 'vue';
+import { useRoute } from 'vue-router';
+import AdminHeader from './components/AdminHeader.vue';
+const route = useRoute();
+const showAdminHeader = computed(() => [
+  '/users',
+  '/products',
+  '/categories'
+].includes(route.path));
 </script>
 
 <template>
-  <router-view />
+  <div>
+    <AdminHeader v-if="showAdminHeader" />
+    <router-view />
+  </div>
 </template>
 
 <style scoped>

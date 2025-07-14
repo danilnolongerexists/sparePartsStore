@@ -39,12 +39,17 @@ export default {
           localStorage.setItem('role', res.data.role);
           localStorage.setItem('email', this.email);
           localStorage.setItem('userId', res.data.userId);
-          this.toast.success('Вход выполнен успешно!');
-          if (res.data.role === 'admin') {
-            this.$router.push('/users');
-          } else {
-            this.$router.push('/');
-          }
+          // Получаем имя пользователя и сохраняем в userName
+          axios.get(`/api/user/${res.data.userId}`).then(userRes => {
+            const u = userRes.data;
+            localStorage.setItem('userName', `${u.first_name} ${u.last_name}`);
+            this.toast.success('Вход выполнен успешно!');
+            if (res.data.role === 'admin') {
+              this.$router.push('/users');
+            } else {
+              this.$router.push('/');
+            }
+          });
         })
         .catch(() => {
           this.toast.error('Неверный email или пароль');
@@ -52,6 +57,7 @@ export default {
           localStorage.removeItem('role');
           localStorage.removeItem('email');
           localStorage.removeItem('userId');
+          localStorage.removeItem('userName');
         });
     },
     goToRegister() {
