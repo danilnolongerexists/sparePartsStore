@@ -1,5 +1,8 @@
 <template>
   <div class="container py-4">
+    <div class="d-flex justify-content-end mb-2">
+      <button class="btn btn-outline-secondary" @click="logout">Выйти</button>
+    </div>
     <h2 class="mb-4 text-center">Управление пользователями</h2>
     <div class="row mb-3 align-items-center g-2">
       <div class="col-md-6 col-12 mb-2 mb-md-0">
@@ -81,7 +84,7 @@
                   </div>
                   <div class="col-md-6 mb-3">
                     <label class="form-label">Телефон</label>
-                    <input v-model="form.phone" type="text" class="form-control" required />
+                    <input v-model="form.phone" type="tel" class="form-control" required @input="onPhoneInput" maxlength="12" />
                   </div>
                   <div class="col-md-6 mb-3">
                     <label class="form-label">Email</label>
@@ -107,6 +110,7 @@
 
 <script>
 import axios from 'axios';
+import { useToast } from 'vue-toastification';
 export default {
   name: 'UserManagement',
   data() {
@@ -128,6 +132,10 @@ export default {
         password: ''
       }
     };
+  },
+  setup() {
+    const toast = useToast();
+    return { toast };
   },
   computed: {
     filteredUsers() {
@@ -172,20 +180,31 @@ export default {
     },
     addUser() {
       axios.post('/api/users', this.form, { headers: { 'x-user-role': 'admin' } })
-        .then(() => { this.fetchUsers(); this.closeModal(); })
-        .catch(() => {});
+        .then(() => { this.fetchUsers(); this.closeModal(); this.toast.success('Пользователь успешно добавлен!'); })
+        .catch(() => { this.toast.error('Ошибка при добавлении пользователя.'); });
     },
     updateUser() {
       axios.put(`/api/users/${this.form.id}`, this.form, { headers: { 'x-user-role': 'admin' } })
-        .then(() => { this.fetchUsers(); this.closeModal(); })
-        .catch(() => {});
+        .then(() => { this.fetchUsers(); this.closeModal(); this.toast.success('Пользователь успешно обновлён!'); })
+        .catch(() => { this.toast.error('Ошибка при обновлении пользователя.'); });
     },
     deleteUser(id) {
       if (confirm('Удалить пользователя?')) {
         axios.delete(`/api/users/${id}`, { headers: { 'x-user-role': 'admin' } })
-          .then(() => { this.fetchUsers(); })
-          .catch(() => {});
+          .then(() => { this.fetchUsers(); this.toast.success('Пользователь удалён!'); })
+          .catch(() => { this.toast.error('Ошибка при удалении пользователя.'); });
       }
+    },
+    logout() {
+      localStorage.removeItem('token');
+      this.$router.push('/login');
+    },
+    onPhoneInput(e) {
+      let value = e.target.value.replace(/\D/g, '');
+      if (value.startsWith('8')) value = '7' + value.slice(1);
+      if (!value.startsWith('7')) value = '7' + value;
+      value = value.slice(0, 11);
+      this.form.phone = '+' + value;
     }
   }
 };

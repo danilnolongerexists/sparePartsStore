@@ -2,6 +2,7 @@
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
+const bcrypt = require('bcryptjs');
 const app = express();
 const port = 3000;
 
@@ -64,14 +65,17 @@ app.post('/api/users', checkAdmin, (req, res) => {
   if (!first_name || !last_name || !role || !phone || !email || !password) {
     return res.status(400).json({ error: 'Необходимо заполнить все обязательные поля' });
   }
-  db.query(
-    'INSERT INTO users (first_name, last_name, patronymic, role, phone, email, password) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    [first_name, last_name, patronymic, role, phone, email, password],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ id: result.insertId, first_name, last_name, patronymic, role, phone, email });
-    }
-  );
+  bcrypt.hash(password, 10, (err, hashedPassword) => {
+    if (err) return res.status(500).json({ error: 'Ошибка при хэшировании пароля' });
+    db.query(
+      'INSERT INTO users (first_name, last_name, patronymic, role, phone, email, password) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [first_name, last_name, patronymic, role, phone, email, hashedPassword],
+      (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ id: result.insertId, first_name, last_name, patronymic, role, phone, email });
+      }
+    );
+  });
 });
 
 // Обновить пользователя
@@ -80,16 +84,23 @@ app.put('/api/users/:id', checkAdmin, (req, res) => {
   const { id } = req.params;
   let query, params;
   if (password) {
-    query = 'UPDATE users SET first_name=?, last_name=?, patronymic=?, role=?, phone=?, email=?, password=? WHERE id=?';
-    params = [first_name, last_name, patronymic, role, phone, email, password, id];
+    bcrypt.hash(password, 10, (err, hashedPassword) => {
+      if (err) return res.status(500).json({ error: 'Ошибка при хэшировании пароля' });
+      query = 'UPDATE users SET first_name=?, last_name=?, patronymic=?, role=?, phone=?, email=?, password=? WHERE id=?';
+      params = [first_name, last_name, patronymic, role, phone, email, hashedPassword, id];
+      db.query(query, params, (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ id, first_name, last_name, patronymic, role, phone, email });
+      });
+    });
   } else {
     query = 'UPDATE users SET first_name=?, last_name=?, patronymic=?, role=?, phone=?, email=? WHERE id=?';
     params = [first_name, last_name, patronymic, role, phone, email, id];
+    db.query(query, params, (err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ id, first_name, last_name, patronymic, role, phone, email });
+    });
   }
-  db.query(query, params, (err) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ id, first_name, last_name, patronymic, role, phone, email });
-  });
 });
 
 // Удалить пользователя
@@ -100,6 +111,104 @@ app.delete('/api/users/:id', checkAdmin, (req, res) => {
     if (result.affectedRows === 0) return res.status(404).json({ error: 'Пользователь не найден' });
     res.json({ success: true });
   });
+});
+
+// Эндпоинт для авторизации пользователя
+app.post('/api/login', (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email и пароль обязательны' });
+  }
+  db.query('SELECT * FROM users WHERE email = ?', [email], async (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (results.length === 0) {
+      return res.status(401).json({ error: 'Неверный email или пароль' });
+    }
+    const user = results[0];
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Неверный email или пароль' });
+    }
+    res.json({ token: 'fake-token', role: user.role, userId: user.id });
+  });
+});
+
+// Регистрация пользователя (публичная)
+app.post('/api/register', (req, res) => {
+  const { first_name, last_name, patronymic, phone, email, password } = req.body;
+  if (!first_name || !last_name || !phone || !email || !password) {
+    return res.status(400).json({ error: 'Необходимо заполнить все обязательные поля' });
+  }
+  bcrypt.hash(password, 10, (err, hashedPassword) => {
+    if (err) return res.status(500).json({ error: 'Ошибка при хэшировании пароля' });
+    db.query(
+      'INSERT INTO users (first_name, last_name, patronymic, role, phone, email, password) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [first_name, last_name, patronymic, 'user', phone, email, hashedPassword],
+      (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ id: result.insertId, first_name, last_name, patronymic, role: 'user', phone, email });
+      }
+    );
+  });
+});
+
+// Получить данные одного пользователя по id (без пароля)
+app.get('/api/user/:id', (req, res) => {
+  const { id } = req.params;
+  db.query('SELECT id, first_name, last_name, patronymic, role, phone, email FROM users WHERE id = ?', [id], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!results.length) return res.status(404).json({ error: 'Пользователь не найден' });
+    res.json(results[0]);
+  });
+});
+
+// Получить данные пользователя по email (без пароля)
+app.get('/api/user-by-email/:email', (req, res) => {
+  const { email } = req.params;
+  db.query('SELECT id, first_name, last_name, patronymic, role, phone, email FROM users WHERE email = ?', [email], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!results.length) return res.status(404).json({ error: 'Пользователь не найден' });
+    res.json(results[0]);
+  });
+});
+
+// Обновить профиль пользователя (без смены роли, доступно для всех авторизованных)
+app.put('/api/profile/:id', async (req, res) => {
+  try {
+    const { first_name, last_name, patronymic, phone, email, password } = req.body;
+    const { id } = req.params;
+    let query, params;
+    if (password) {
+      bcrypt.hash(password, 10, (err, hashedPassword) => {
+        if (err) {
+          console.error('Hash error:', err);
+          return res.status(500).json({ error: 'Ошибка при хэшировании пароля' });
+        }
+        query = 'UPDATE users SET first_name=?, last_name=?, patronymic=?, phone=?, email=?, password=? WHERE id=?';
+        params = [first_name, last_name, patronymic, phone, email, hashedPassword, id];
+        db.query(query, params, (err) => {
+          if (err) {
+            console.error('DB error:', err);
+            return res.status(500).json({ error: err.message });
+          }
+          res.json({ id, first_name, last_name, patronymic, phone, email });
+        });
+      });
+    } else {
+      query = 'UPDATE users SET first_name=?, last_name=?, patronymic=?, phone=?, email=? WHERE id=?';
+      params = [first_name, last_name, patronymic, phone, email, id];
+      db.query(query, params, (err) => {
+        if (err) {
+          console.error('DB error:', err);
+          return res.status(500).json({ error: err.message });
+        }
+        res.json({ id, first_name, last_name, patronymic, phone, email });
+      });
+    }
+  } catch (e) {
+    console.error('API error:', e);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
 });
 
 app.listen(port, () => {
