@@ -12,6 +12,10 @@
           <img src="@/assets/icons/search.svg" alt="Поиск" class="search-icon" />
         </div>
       </div>
+      <button class="icon-btn" @click="$router.push('/favorites')">
+        <img src="@/assets/icons/favorite.svg" alt="Избранное" class="icon-img" />
+        <span>Избранное</span>
+      </button>
       <button class="icon-btn">
         <img src="@/assets/icons/cart.svg" alt="Корзина" class="icon-img" />
         <span>Корзина</span>

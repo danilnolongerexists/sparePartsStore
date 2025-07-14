@@ -15,7 +15,7 @@
             <tr>
               <th>Фото</th>
               <th>Название</th>
-              <th>Категория</th>
+              <th>Категории</th>
               <th>Цена (пользователь)</th>
               <th>Цена (мастер)</th>
               <th>Кол-во</th>
@@ -28,7 +28,7 @@
                 <img v-if="product.photos" :src="getFirstPhoto(product.photos)" class="rounded border" style="width:56px;height:56px;object-fit:cover;" alt="Фото" />
               </td>
               <td>{{ product.name }}</td>
-              <td>{{ getCategoryName(product.category_id) }}</td>
+              <td>{{ getCategoryNames(product).join(', ') }}</td>
               <td>{{ product.user_price }}</td>
               <td>{{ product.master_price }}</td>
               <td>{{ product.quantity }}</td>
@@ -73,11 +73,11 @@
                     <input v-model="form.name" required maxlength="100" class="form-control" />
                   </div>
                   <div class="col-md-6">
-                    <label class="form-label">Категория</label>
-                    <select v-model="form.category_id" class="form-select">
-                      <option :value="null">Без категории</option>
+                    <label class="form-label">Категории</label>
+                    <select v-model="form.category_ids" class="form-select" multiple>
                       <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
                     </select>
+                    <div class="form-text">Зажмите Ctrl или Cmd для выбора нескольких</div>
                   </div>
                   <div class="col-12">
                     <label class="form-label">Описание</label>
@@ -134,7 +134,7 @@ export default {
       form: {
         id: null,
         name: '',
-        category_id: null,
+        category_ids: [],
         description: '',
         user_price: '',
         master_price: '',
@@ -169,23 +169,34 @@ export default {
       const res = await axios.get('/api/categories');
       this.categories = res.data;
     },
-    getCategoryName(id) {
-      const cat = this.categories.find(c => c.id === id);
-      return cat ? cat.name : '';
+    getCategoryNames(product) {
+      if (!product.category_ids || !Array.isArray(product.category_ids)) return [];
+      return this.categories.filter(c => product.category_ids.includes(c.id)).map(c => c.name);
     },
     getFirstPhoto(photos) {
-      return photos ? photos.split(',')[0] : '';
+      if (!photos) return '';
+      let url = photos.split(',')[0];
+      if (url && !url.startsWith('http')) {
+        // Для локальной разработки
+        url = 'http://localhost:3000' + (url.startsWith('/') ? url : '/' + url);
+      }
+      return url;
     },
     openAddModal() {
       this.editMode = false;
       this.showModal = true;
-      this.form = { id: null, name: '', category_id: null, description: '', user_price: '', master_price: '', quantity: '', photos: [], oldPhotos: '' };
+      this.form = { id: null, name: '', category_ids: [], description: '', user_price: '', master_price: '', quantity: '', photos: [], oldPhotos: '' };
       this.photoPreviews = [];
     },
     openEditModal(product) {
       this.editMode = true;
       this.showModal = true;
-      this.form = { ...product, photos: [], oldPhotos: product.photos };
+      this.form = {
+        ...product,
+        category_ids: product.category_ids ? [...product.category_ids] : [],
+        photos: [],
+        oldPhotos: product.photos
+      };
       this.photoPreviews = product.photos ? product.photos.split(',') : [];
     },
     closeModal() {
@@ -209,12 +220,15 @@ export default {
     async submitProduct() {
       const formData = new FormData();
       formData.append('name', this.form.name);
-      formData.append('category_id', this.form.category_id || '');
+      // Передаем массив id категорий как JSON-строку
+      formData.append('category_ids', JSON.stringify(this.form.category_ids));
       formData.append('description', this.form.description);
       formData.append('user_price', this.form.user_price);
       formData.append('master_price', this.form.master_price);
       formData.append('quantity', this.form.quantity);
-      if (this.editMode) formData.append('photos', this.form.oldPhotos);
+      if (this.editMode && this.form.oldPhotos) {
+        formData.append('oldPhotos', this.form.oldPhotos);
+      }
       if (this.form.photos && this.form.photos.length) {
         this.form.photos.forEach(f => formData.append('photos', f));
       }

@@ -89,7 +89,10 @@ export default {
       }
     },
     logout() {
-      localStorage.clear();
+      localStorage.removeItem('token');
+      localStorage.removeItem('role');
+      localStorage.removeItem('userId');
+      localStorage.removeItem('userName');
       this.$router.push('/login');
     }
   }

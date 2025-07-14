@@ -129,7 +129,12 @@ export default {
       this.categories = res.data;
     },
     getFirstPhoto(photos) {
-      return photos ? photos.split(',')[0] : '';
+      if (!photos) return '';
+      let url = photos.split(',')[0];
+      if (url && !url.startsWith('http')) {
+        url = 'http://localhost:3000' + (url.startsWith('/') ? url : '/' + url);
+      }
+      return url;
     },
     openAddModal() {
       this.editMode = false;

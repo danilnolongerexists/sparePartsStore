@@ -6,6 +6,7 @@ import MainPage from './components/MainPage.vue';
 import ProfilePage from './components/ProfilePage.vue';
 import ProductManagement from './components/ProductManagement.vue';
 import CategoryManagement from './components/CategoryManagement.vue';
+import FavoritesPage from './components/FavoritesPage.vue';
 
 const routes = [
   { path: '/', component: MainPage },
@@ -15,6 +16,7 @@ const routes = [
   { path: '/products', component: ProductManagement, meta: { requiresAuth: true } },
   { path: '/categories', component: CategoryManagement, meta: { requiresAuth: true } },
   { path: '/profile', component: ProfilePage, meta: { requiresAuth: true } },
+  { path: '/favorites', component: FavoritesPage },
 ];
 
 const router = createRouter({
