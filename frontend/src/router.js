@@ -1,11 +1,11 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import UserManagement from './components/UserManagement.vue';
+import UserManagement from './components/Admin/UserManagement.vue';
 import Login from './components/Login.vue';
 import Register from './components/Register.vue';
 import MainPage from './components/MainPage.vue';
 import ProfilePage from './components/ProfilePage.vue';
-import ProductManagement from './components/ProductManagement.vue';
-import CategoryManagement from './components/CategoryManagement.vue';
+import ProductManagement from './components/Admin/ProductManagement.vue';
+import CategoryManagement from './components/Admin/CategoryManagement.vue';
 import FavoritesPage from './components/FavoritesPage.vue';
 
 const routes = [

@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
-import AdminHeader from './components/AdminHeader.vue';
+import AdminHeader from './components/Admin/AdminHeader.vue';
 const route = useRoute();
 const showAdminHeader = computed(() => [
   '/users',

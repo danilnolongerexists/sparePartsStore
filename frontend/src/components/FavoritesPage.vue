@@ -1,6 +1,7 @@
 <template>
   <div>
     <MainHeader :isAuth="isAuth" :userName="userName" @login="goLogin" @profile="goProfile" />
+    <Navigation :isAuth="isAuth" :userName="userName" @login="goLogin" @profile="goProfile" />
     <div class="container py-4">
       <h2 class="mb-4">Избранные товары</h2>
       <div class="products-list">
@@ -22,10 +23,11 @@
 
 <script>
 import axios from 'axios';
-import MainHeader from './MainHeader.vue';
+import MainHeader from './Includes/MainHeader.vue';
+import Navigation from './Includes/Navigation.vue';
 export default {
   name: 'FavoritesPage',
-  components: { MainHeader },
+  components: { MainHeader, Navigation },
   data() {
     return {
       products: [],
@@ -92,63 +94,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-.products-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.5rem;
-  justify-content: flex-start;
-  margin-bottom: 2rem;
-}
-.product-card {
-  background: #fff;
-  border-radius: 10px;
-  box-shadow: 0 2px 12px rgba(44,62,80,0.07);
-  padding: 1rem;
-  width: 220px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  transition: box-shadow 0.2s;
-}
-.product-card:hover {
-  box-shadow: 0 4px 24px rgba(44,62,80,0.13);
-}
-.product-img {
-  width: 120px;
-  height: 120px;
-  object-fit: cover;
-  border-radius: 8px;
-  margin-bottom: 0.7rem;
-  background: #f7f7fa;
-  border: 1px solid #e0e0e0;
-}
-.product-info {
-  text-align: center;
-}
-.product-name {
-  font-size: 1.08rem;
-  font-weight: 600;
-  margin-bottom: 0.3rem;
-}
-.product-price {
-  color: #1976d2;
-  font-size: 1.1rem;
-  font-weight: 700;
-}
-.favorite-btn {
-  background: none;
-  border: none;
-  margin-top: 0.5rem;
-  cursor: pointer;
-  transition: filter 0.2s;
-  filter: grayscale(1) brightness(1.2);
-}
-.favorite-btn.active {
-  filter: none;
-}
-.favorite-btn.active img {
-  filter: invert(27%) sepia(97%) saturate(7492%) hue-rotate(-8deg) brightness(1.1);
-}
-</style>

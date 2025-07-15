@@ -4,7 +4,7 @@ import router from './router'
 import Toast, { POSITION } from 'vue-toastification'
 import 'vue-toastification/dist/index.css'
 
-import './assets/main.css'
+import './assets/main.scss'
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const app = createApp(App)
