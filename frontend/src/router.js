@@ -1,27 +1,86 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import UserManagement from './components/Admin/UserManagement.vue';
-import Login from './components/Login.vue';
-import Register from './components/Register.vue';
-import MainPage from './components/MainPage.vue';
-import ProfilePage from './components/ProfilePage.vue';
-import ProductManagement from './components/Admin/ProductManagement.vue';
-import CategoryManagement from './components/Admin/CategoryManagement.vue';
-import FavoritesPage from './components/FavoritesPage.vue';
-
-const routes = [
-  { path: '/', component: MainPage },
-  { path: '/login', component: Login },
-  { path: '/register', component: Register },
-  { path: '/users', component: UserManagement, meta: { requiresAuth: true } },
-  { path: '/products', component: ProductManagement, meta: { requiresAuth: true } },
-  { path: '/categories', component: CategoryManagement, meta: { requiresAuth: true } },
-  { path: '/profile', component: ProfilePage, meta: { requiresAuth: true } },
-  { path: '/favorites', component: FavoritesPage },
-];
 
 const router = createRouter({
   history: createWebHistory(),
-  routes,
+  mode: 'history',
+  routes: [
+    {
+      name: 'home',
+      path: '/',
+      component: () => import('./components/MainPage.vue'),
+      meta: {
+        title: 'D-Detal | Главная'
+      }
+    },
+    {
+      name: 'login',
+      path: '/login',
+      component: () => import('./components/Login.vue'),
+      meta: {
+        title: 'D-Detal | Вход',
+      }
+    },
+    {
+      name: 'register',
+      path: '/register',
+      component: () => import('./components/Register.vue'),
+      meta: {
+        title: 'D-Detal | Регистрация',
+      }
+    },
+    {
+      name: 'users',
+      path: '/users',
+      component: () => import('./components/Admin/UserManagement.vue'),
+      meta: {
+        title: 'D-Detal | Управление пользователями',
+        requiresAuth: true,
+        requiresAdmin: true
+      }
+    },
+    {
+      name: 'products',
+      path: '/products',
+      component: () => import('./components/Admin/ProductManagement.vue'),
+      meta: {
+        title: 'D-Detal | Управление товарами',
+        requiresAuth: true,
+        requiresAdmin: true
+      }
+    },
+    {
+      name: 'categories',
+      path: '/categories',
+      component: () => import('./components/Admin/CategoryManagement.vue'),
+      meta: {
+        title: 'D-Detal | Управление категориями',
+        requiresAuth: true,
+        requiresAdmin: true
+      }
+    },
+    {
+      name: 'profile',
+      path: '/profile',
+      component: () => import('./components/ProfilePage.vue'),
+      meta: {
+        title: 'D-Detal | Профиль',
+        requiresAuth: true
+      }
+    },
+    {
+      name: 'favorites',
+      path: '/favorites',
+      component: () => import('./components/FavoritesPage.vue'),
+      meta: {
+        title: 'D-Detal | Избранное',
+        requiresAuth: true
+      },
+    },
+  ],
+  scrollBehavior(to, from, savedPosition) {
+    if (to.hash) return;
+    return { top: 0, behavior: 'smooth' };
+  },
 });
 
 router.beforeEach((to, from, next) => {
