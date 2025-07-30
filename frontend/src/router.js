@@ -98,3 +98,10 @@ router.beforeEach((to, from, next) => {
 });
 
 export default router;
+
+// Динамическая установка title вкладки
+router.afterEach((to) => {
+  if (to.meta && to.meta.title) {
+    document.title = to.meta.title;
+  }
+});

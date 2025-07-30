@@ -1,6 +1,6 @@
 <template>
   <div class="main-page">
-    <MainHeader :isAuth="isAuth" :userName="userName" @login="goLogin" @profile="goProfile" />
+    <!-- <MainHeader :isAuth="isAuth" :userName="userName" @login="goLogin" @profile="goProfile" /> -->
     <Navigation :isAuth="isAuth" :userName="userName" @login="goLogin" @profile="goProfile" />
     <section class="products-section">
       <h2 class="mb-3">Популярные товары</h2>
@@ -26,11 +26,10 @@
 
 <script>
 import axios from 'axios';
-import MainHeader from './Includes/MainHeader.vue';
 import Navigation from './Includes/Navigation.vue';
 export default {
   name: 'MainPage',
-  components: { MainHeader, Navigation },
+  components: { Navigation },
   data() {
     return {
       userName: '',
