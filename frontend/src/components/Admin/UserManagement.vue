@@ -1,6 +1,5 @@
 <template>
   <div>
-    <AdminHeader />
     <div class="container py-4">
       <h2>Управление пользователями</h2>
       <div class="row mb-3 align-items-center g-2">
@@ -235,4 +234,4 @@ export default {
 };
 </script>
 
-<!-- Bootstrap используется, поэтому кастомные стили не нужны -->
+<style src="bootstrap/dist/css/bootstrap.min.css"></style>

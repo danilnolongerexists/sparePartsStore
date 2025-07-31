@@ -266,4 +266,4 @@ export default {
 }
 </script>
 
-<!-- Bootstrap используется, поэтому кастомные стили не нужны -->
+<style src="bootstrap/dist/css/bootstrap.min.css"></style>

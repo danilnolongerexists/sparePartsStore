@@ -5,7 +5,7 @@ import Toast, { POSITION } from 'vue-toastification'
 import 'vue-toastification/dist/index.css'
 
 import './assets/main.scss'
-import 'bootstrap/dist/css/bootstrap.min.css';
+// import './assets/normalize.css'
 
 const app = createApp(App)
 app.use(router)

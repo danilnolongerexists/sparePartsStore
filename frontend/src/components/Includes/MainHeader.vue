@@ -32,6 +32,21 @@
         </button>
       </div>
     </div>
+    <!-- <div class="container d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center gap-3">
+        <nav>
+          <a class="admin-link" :class="{active: $route.path==='/users'}" @click.prevent="$router.push('/users')">Пользователи</a>
+          <span class="divider">/</span>
+          <a class="admin-link" :class="{active: $route.path==='/products'}" @click.prevent="$router.push('/products')">Товары</a>
+          <span class="divider">/</span>
+          <a class="admin-link" :class="{active: $route.path==='/categories'}" @click.prevent="$router.push('/categories')">Категории</a>
+        </nav>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span class="fw-bold">{{ userName }}</span>
+        <button class="btn btn-outline-secondary btn-sm" @click="logout">Выйти</button>
+      </div>
+    </div> -->
   </header>
 </template>
 

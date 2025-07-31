@@ -53,27 +53,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-.admin-header {
-  box-shadow: 0 2px 8px rgba(44,62,80,0.04);
-}
-.admin-link {
-  color: #1976d2;
-  text-decoration: underline;
-  margin: 0 0.5em;
-  cursor: pointer;
-  font-weight: 500;
-  transition: color 0.2s;
-}
-.admin-link.active {
-  color: #222;
-  text-decoration: none;
-  font-weight: 700;
-  cursor: default;
-}
-.divider {
-  color: #888;
-  margin: 0 0.2em;
-}
-</style>

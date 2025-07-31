@@ -2,17 +2,10 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import AdminHeader from './components/Admin/AdminHeader.vue';
 import MainHeader from './components/Includes/MainHeader.vue';
 import axios from 'axios';
 
 const route = useRoute();
-const showAdminHeader = computed(() => [
-  '/users',
-  '/products',
-  '/categories'
-].includes(route.path));
-const showMainHeader = computed(() => !showAdminHeader.value);
 
 const isAuth = computed(() => !!localStorage.getItem('token'));
 const userName = ref('');
@@ -37,17 +30,12 @@ watch(isAuth, (val) => {
 
 <template>
   <div>
-    <AdminHeader v-if="showAdminHeader" />
-    <MainHeader v-else-if="showMainHeader" :isAuth="isAuth" :userName="userName" @login="$router.push('/login')" @profile="$router.push('/profile')" />
+    <MainHeader :isAuth="isAuth" :userName="userName" @login="goLogin" @profile="goProfile" />
     <router-view />
   </div>
 </template>
 
 <style scoped>
-body, html {
-  margin: 0;
-  padding: 0;
-  background: #f7f7fa;
-  font-family: 'Segoe UI', Arial, sans-serif;
-}
+
+
 </style>

@@ -1,6 +1,5 @@
 <template>
   <div>
-    <MainHeader :isAuth="isAuth" :userName="userName" @login="goLogin" @profile="goProfile" />
     <Navigation :isAuth="isAuth" :userName="userName" @login="goLogin" @profile="goProfile" />
     <div class="container py-4">
       <h2 class="mb-4">Избранные товары</h2>
