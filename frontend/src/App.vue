@@ -1,4 +1,3 @@
-
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
@@ -7,7 +6,7 @@ import axios from 'axios';
 
 const route = useRoute();
 
-const isAuth = computed(() => !!localStorage.getItem('token'));
+const isAuth = ref(!!localStorage.getItem('token'));
 const userName = ref('');
 
 async function fetchUserName() {
@@ -17,6 +16,20 @@ async function fetchUserName() {
     const res = await axios.get(`/api/user/${id}`);
     userName.value = res.data.first_name + (res.data.last_name ? ' ' + res.data.last_name : '');
   } catch { userName.value = ''; }
+}
+
+function handleLogin() {
+  isAuth.value = !!localStorage.getItem('token');
+  fetchUserName();
+}
+
+function goProfile() {
+  // Переход на страницу профиля
+  window.location.href = '/profile';
+  // Или, если используете composition API router:
+  // import { useRouter } from 'vue-router';
+  // const router = useRouter();
+  // router.push('/profile');
 }
 
 onMounted(() => {
@@ -30,7 +43,7 @@ watch(isAuth, (val) => {
 
 <template>
   <div>
-    <MainHeader :isAuth="isAuth" :userName="userName" @login="goLogin" @profile="goProfile" />
+    <MainHeader :isAuth="isAuth" :userName="userName" @login="handleLogin" @profile="goProfile" />
     <router-view />
   </div>
 </template>

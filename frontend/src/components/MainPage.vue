@@ -9,7 +9,10 @@
           <img v-if="getFirstPhoto(product.photos)" :src="getFirstPhoto(product.photos)" class="product-img" alt="Фото товара" />
           <div class="product-info">
             <div class="product-name">{{ product.name }}</div>
-            <div class="product-price">{{ product.user_price }} ₽</div>
+            <div class="product-price">
+              <template v-if="role === 'master'">{{ product.master_price }} ₽</template>
+              <template v-else>{{ product.user_price }} ₽</template>
+            </div>
           </div>
           <button class="favorite-btn" :class="{active: isFavorite(product.id)}" @click="toggleFavorite(product.id)">
             <img src="@/assets/icons/favorite.svg" alt="Избранное" style="width:22px;height:22px;vertical-align:middle;" />
@@ -34,7 +37,8 @@ export default {
     return {
       userName: '',
       products: [],
-      favoriteIds: []
+      favoriteIds: [],
+      role: localStorage.getItem('role') || 'user'
     }
   },
   computed: {
@@ -76,40 +80,64 @@ export default {
         this.products = [];
       }
     },
+    async fetchFavorites() {
+      if (!this.isAuth) return;
+      try {
+        const token = localStorage.getItem('token');
+        const userId = localStorage.getItem('userId');
+        const res = await axios.get('/api/favorites', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'x-user-id': userId
+          }
+        });
+        this.favoriteIds = res.data; // массив id товаров
+      } catch {
+        this.favoriteIds = [];
+      }
+    },
     isFavorite(id) {
       return this.favoriteIds.includes(id);
     },
-    toggleFavorite(id) {
+    async toggleFavorite(id) {
+      if (!this.isAuth) return;
+      const token = localStorage.getItem('token');
+      const userId = localStorage.getItem('userId');
       const idx = this.favoriteIds.indexOf(id);
       if (idx === -1) {
+        await axios.post('/api/favorites', { product_id: id }, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'x-user-id': userId
+          }
+        });
         this.favoriteIds.push(id);
       } else {
+        await axios.delete(`/api/favorites/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'x-user-id': userId
+          }
+        });
         this.favoriteIds.splice(idx, 1);
       }
-      this.saveFavorites();
-    },
-    saveFavorites() {
-      const userId = localStorage.getItem('userId') || 'guest';
-      localStorage.setItem(`favorites_${userId}`, JSON.stringify(this.favoriteIds));
-    },
-    loadFavorites() {
-      const userId = localStorage.getItem('userId') || 'guest';
-      this.favoriteIds = JSON.parse(localStorage.getItem(`favorites_${userId}`) || '[]');
     },
   },
-  mounted() {
-    this.fetchProducts();
+  async mounted() {
+    await this.fetchFavorites();
+    await this.fetchProducts();
     if (this.isAuth) this.fetchUserName();
-    this.loadFavorites();
   },
   watch: {
     isAuth(val) {
       if (val) {
         this.fetchUserName();
         this.loadFavorites();
+        this.role = localStorage.getItem('role') || 'user';
       } else {
         this.userName = '';
         this.loadFavorites();
+        this.role = 'user';
       }
     }
   }

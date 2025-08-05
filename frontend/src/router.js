@@ -1,4 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
+import { useToast } from 'vue-toastification';
+
+const toast = useToast();
 
 const router = createRouter({
   history: createWebHistory(),
@@ -76,6 +79,14 @@ const router = createRouter({
         requiresAuth: true
       },
     },
+    {
+      name: 'product',
+      path: '/product/:id',
+      component: () => import('./components/ProductPage.vue'),
+      meta: {
+        title: 'D-Detal | Товар'
+      }
+    },
   ],
   scrollBehavior(to, from, savedPosition) {
     if (to.hash) return;
@@ -86,7 +97,18 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const isAuth = !!localStorage.getItem('token');
   const role = localStorage.getItem('role');
-  if (to.meta.requiresAuth && !isAuth) {
+  // Пути, для которых нужна авторизация, но не хотим редиректить на /login
+  const protectedRoutes = ['/users', '/products', '/categories', '/favorites','/profile'];
+  if (protectedRoutes.includes(to.path) && !isAuth) {
+    toast.error('Авторизуйтесь', {
+      position: 'bottom-center', // Позиция уведомления
+      hideProgressBar: true,    // Скрыть полоску прогресса
+      closeButton: false,        // Показать кнопку закрытия
+      draggable: false,          // Разрешить перетаскивание
+      pauseOnHover: true        // Приостановить таймер при наведении
+    });
+    next(from.fullPath);
+  } else if (to.name === 'profile' && to.meta.requiresAuth && !isAuth) {
     next('/login');
   } else if ((to.path === '/login' || to.path === '/register') && isAuth && role === 'admin') {
     next('/users');

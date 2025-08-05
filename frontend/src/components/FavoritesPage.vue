@@ -31,7 +31,8 @@ export default {
     return {
       products: [],
       userName: '',
-      favoriteIds: []
+      favoriteIds: [],
+      role: localStorage.getItem('role') || 'user'
     }
   },
   computed: {
@@ -57,20 +58,46 @@ export default {
       }
       return url;
     },
-    toggleFavorite(id) {
+    async fetchFavorites() {
+      if (!this.isAuth) return;
+      try {
+        const token = localStorage.getItem('token');
+        const userId = localStorage.getItem('userId');
+        const res = await axios.get('/api/favorites', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'x-user-id': userId
+          }
+        });
+        this.favoriteIds = res.data; // массив id товаров
+      } catch {
+        this.favoriteIds = [];
+      }
+    },
+    async toggleFavorite(id) {
+      if (!this.isAuth) return;
+      const token = localStorage.getItem('token');
+      const userId = localStorage.getItem('userId');
       const idx = this.favoriteIds.indexOf(id);
-      if (idx !== -1) {
+      if (idx === -1) {
+        // добавить в избранное
+        await axios.post('/api/favorites', { product_id: id }, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'x-user-id': userId
+          }
+        });
+        this.favoriteIds.push(id);
+      } else {
+        // убрать из избранного
+        await axios.delete(`/api/favorites/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'x-user-id': userId
+          }
+        });
         this.favoriteIds.splice(idx, 1);
       }
-      this.saveFavorites();
-    },
-    saveFavorites() {
-      const userId = localStorage.getItem('userId') || 'guest';
-      localStorage.setItem(`favorites_${userId}`, JSON.stringify(this.favoriteIds));
-    },
-    loadFavorites() {
-      const userId = localStorage.getItem('userId') || 'guest';
-      this.favoriteIds = JSON.parse(localStorage.getItem(`favorites_${userId}`) || '[]');
     },
     async fetchUserName() {
       const id = localStorage.getItem('userId');
@@ -86,9 +113,17 @@ export default {
       this.$router.push('/login');
       return;
     }
-    this.loadFavorites();
-    const res = await axios.get('/api/products');
+    // Получаем избранные товары напрямую с бэка
+    const token = localStorage.getItem('token');
+    const userId = localStorage.getItem('userId');
+    const res = await axios.get('/api/favorites/products', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'x-user-id': userId
+      }
+    });
     this.products = res.data;
+    this.favoriteIds = res.data.map(p => p.id);
     this.fetchUserName();
   }
 }

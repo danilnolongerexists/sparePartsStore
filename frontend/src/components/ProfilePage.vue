@@ -38,7 +38,6 @@
         </div>
         <div class="profile-actions">
           <button type="submit">Сохранить</button>
-          <button type="button" @click="goBack">Назад</button>
         </div>
         <div v-if="error" class="profile-error">{{ error }}</div>
         <div v-if="loading" class="profile-loader">Загрузка...</div>
@@ -49,6 +48,7 @@
 
 <script>
 import axios from 'axios';
+import { useToast } from 'vue-toastification';
 export default {
   name: 'ProfilePage',
   data() {
@@ -62,8 +62,12 @@ export default {
         password: ''
       },
       loading: true,
-      error: ''
+      error: '',
+      toast: null
     }
+  },
+  created() {
+    this.toast = useToast();
   },
   async mounted() {
     try {
@@ -118,7 +122,13 @@ export default {
         await axios.put(url, data, {
           headers: { 'x-user-role': localStorage.getItem('role'), Authorization: token }
         });
-        alert('Данные успешно сохранены!');
+        this.toast.success('Данные успешно сохранены!', {
+          position: 'bottom-center', // Позиция уведомления
+          hideProgressBar: true,    // Скрыть полоску прогресса
+          closeButton: false,        // Показать кнопку закрытия
+          draggable: false,          // Разрешить перетаскивание
+          pauseOnHover: true        // Приостановить таймер при наведении
+        });
       } catch (e) {
         this.error = e?.response?.data?.error || 'Ошибка при сохранении';
       }
@@ -128,7 +138,8 @@ export default {
       localStorage.removeItem('role');
       localStorage.removeItem('userId');
       localStorage.removeItem('userName');
-      this.$router.push('/');
+      localStorage.removeItem('email');
+      window.location.href = '/';
     },
     goBack() {
       this.$router.push('/');
