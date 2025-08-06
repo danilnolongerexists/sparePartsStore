@@ -2,6 +2,50 @@ const express = require('express');
 const router = express.Router();
 
 module.exports = (db) => {
+  // Получить заказы пользователя (и гостей по телефону/email)
+  router.get('/', async (req, res) => {
+    const { user_id, phone, email } = req.query;
+    let where = '';
+    let params = [];
+    if (user_id) {
+      where = 'user_id = ?';
+      params = [user_id];
+    } else if (phone && email) {
+      where = 'phone = ? AND email = ?';
+      params = [phone, email];
+    } else {
+      return res.status(400).json({ error: 'user_id или phone+email обязательны' });
+    }
+    try {
+      // Получаем заказы
+      const [orders] = await db.promise().query(
+        `SELECT * FROM orders WHERE ${where} ORDER BY id DESC`,
+        params
+      );
+      if (!orders.length) return res.json([]);
+      // Получаем все order_items для этих заказов
+      const orderIds = orders.map(o => o.id);
+      const [items] = await db.promise().query(
+        `SELECT * FROM order_items WHERE order_id IN (${orderIds.map(() => '?').join(',')})`,
+        orderIds
+      );
+      // Группируем товары по заказу
+      const itemsByOrder = {};
+      for (const item of items) {
+        if (!itemsByOrder[item.order_id]) itemsByOrder[item.order_id] = [];
+        itemsByOrder[item.order_id].push(item);
+      }
+      // Добавляем товары к заказам
+      const result = orders.map(order => ({
+        ...order,
+        items: itemsByOrder[order.id] || []
+      }));
+      res.json(result);
+    } catch (e) {
+      console.error('Ошибка получения заказов:', e);
+      res.status(500).json({ error: 'Ошибка получения заказов' });
+    }
+  });
   // Создание заказа
   router.post('/', async (req, res) => {
 

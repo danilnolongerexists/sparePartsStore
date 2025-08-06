@@ -1,3 +1,4 @@
+
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
@@ -16,6 +17,33 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 module.exports = (db, checkAdmin) => {
+  // Получить список товаров по массиву id
+  router.post('/by-ids', (req, res) => {
+    const ids = req.body.ids;
+    if (!Array.isArray(ids) || !ids.length) {
+      return res.json([]);
+    }
+    const placeholders = ids.map(() => '?').join(',');
+    const sql = `
+      SELECT p.*, 
+        GROUP_CONCAT(pc.category_id) AS category_ids,
+        GROUP_CONCAT(c.name) AS category_names
+      FROM products p
+      LEFT JOIN product_categories pc ON p.id = pc.product_id
+      LEFT JOIN categories c ON pc.category_id = c.id
+      WHERE p.id IN (${placeholders})
+      GROUP BY p.id
+    `;
+    db.query(sql, ids, (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      const products = results.map(row => ({
+        ...row,
+        category_ids: row.category_ids ? row.category_ids.split(',').map(Number) : [],
+        category_names: row.category_names ? row.category_names.split(',') : []
+      }));
+      res.json(products);
+    });
+  });
   // Получить все товары с категориями
   router.get('/', (req, res) => {
     const sql = `

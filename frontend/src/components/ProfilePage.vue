@@ -4,8 +4,12 @@
       <h2>Личный кабинет</h2>
       <button class="profile-logout" @click="logout">Выйти</button>
     </div>
+    <div class="profile-tabs">
+      <button :class="{active: tab==='profile'}" @click="tab='profile'">Профиль</button>
+      <button :class="{active: tab==='orders'}" @click="onOrdersTabClick">Заказы</button>
+    </div>
     <div class="profile-content">
-      <form class="profile-form" @submit.prevent="save">
+      <form v-if="tab==='profile'" class="profile-form" @submit.prevent="save">
         <div class="profile-row">
           <div class="profile-col">
             <label>Имя</label>
@@ -42,17 +46,42 @@
         <div v-if="error" class="profile-error">{{ error }}</div>
         <div v-if="loading" class="profile-loader">Загрузка...</div>
       </form>
+      <div v-else-if="tab==='orders'" class="orders-tab">
+        <div v-if="ordersLoading">Загрузка заказов...</div>
+        <div v-else-if="!Array.isArray(orders) || orders.length === 0">У вас пока нет заказов.</div>
+        <div v-else>
+          <div v-for="order in orders" :key="order.id" class="order-card">
+            <div class="order-header">
+              <b>Заказ №{{ order.id }}</b> — {{ order.status }}<br/>
+              <span class="order-date">{{ formatDate(order.created_at) }}</span>
+              <span class="order-sum">Сумма: {{ order.total_price }} ₽</span>
+            </div>
+            <div class="order-items">
+              <div v-for="item in order.items" :key="item.id" class="order-item">
+                <span>Товар: {{ item.product_id }}</span>
+                <span>Кол-во: {{ item.quantity }}</span>
+                <span>Цена: {{ item.price }} ₽</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
+import dayjs from 'dayjs';
 import axios from 'axios';
 import { useToast } from 'vue-toastification';
+
 export default {
   name: 'ProfilePage',
   data() {
     return {
+      tab: 'profile',
+      orders: [],
+      ordersLoading: false,
       form: {
         first_name: '',
         last_name: '',
@@ -64,6 +93,12 @@ export default {
       loading: true,
       error: '',
       toast: null
+    }
+  },
+  watch: {
+    tab(val) {
+      console.log('tab changed:', val);
+      if (val === 'orders') this.fetchOrders();
     }
   },
   created() {
@@ -95,7 +130,39 @@ export default {
     }
   },
   methods: {
+    onOrdersTabClick() {
+      console.log('Клик по вкладке Заказы');
+      this.tab = 'orders';
+    },
+    async fetchOrders() {
+      console.log('fetchOrders called');
+      this.ordersLoading = true;
+      try {
+        const userId = await this.getUserId();
+        console.log('userId for orders:', userId);
+        if (!userId) throw new Error('Нет userId');
+        const res = await axios.get(`/api/orders?user_id=${userId}`);
+        console.log('orders response:', res.data);
+        this.orders = res.data;
+      } catch (e) {
+        console.log('fetchOrders error:', e);
+        this.orders = [];
+      } finally {
+        this.ordersLoading = false;
+      }
+    },
+    formatDate(date) {
+      if (!date) return '';
+      return dayjs(date).format('DD.MM.YYYY HH:mm');
+    },
     async getUserId() {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          if (user && user.id) return user.id;
+        } catch (e) {}
+      }
       let id = localStorage.getItem('userId');
       if (id) return id;
       const email = localStorage.getItem('email');
@@ -123,11 +190,11 @@ export default {
           headers: { 'x-user-role': localStorage.getItem('role'), Authorization: token }
         });
         this.toast.success('Данные успешно сохранены!', {
-          position: 'bottom-center', // Позиция уведомления
-          hideProgressBar: true,    // Скрыть полоску прогресса
-          closeButton: false,        // Показать кнопку закрытия
-          draggable: false,          // Разрешить перетаскивание
-          pauseOnHover: true        // Приостановить таймер при наведении
+          position: 'bottom-center',
+          hideProgressBar: true,
+          closeButton: false,
+          draggable: false,
+          pauseOnHover: true
         });
       } catch (e) {
         this.error = e?.response?.data?.error || 'Ошибка при сохранении';
