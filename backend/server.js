@@ -253,6 +253,10 @@ app.use('/api/favorites', (req, res, next) => {
   next();
 }, favoritesRouter);
 
+// Подключение роутера для заказов
+const ordersRouter = require('./orders')(db);
+app.use('/api/orders', ordersRouter);
+
 app.listen(port, () => {
   console.log(`Сервер запущен на http://localhost:${port}`);
 });

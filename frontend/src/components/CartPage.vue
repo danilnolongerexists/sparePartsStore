@@ -19,6 +19,39 @@
       <div class="cart-total">
         <b>Итого: {{ totalPrice }} ₽</b>
       </div>
+      <form @submit.prevent="submitOrder" class="order-form" style="margin-top:2rem;">
+        <h2>Оформление заказа</h2>
+        <div>
+          <label>Тип заказа:</label>
+          <select v-model="orderType">
+            <option value="Самовывоз">Самовывоз</option>
+            <option value="Доставка">Доставка</option>
+          </select>
+        </div>
+        <div v-if="!isAuth">
+          <div>
+            <label>Имя:</label>
+            <input v-model="orderName" required />
+          </div>
+          <div>
+            <label>Телефон:</label>
+            <input v-model="orderPhone" required />
+          </div>
+          <div>
+            <label>Email:</label>
+            <input v-model="orderEmail" type="email" />
+          </div>
+        </div>
+        <div v-if="orderType === 'Доставка'">
+          <div>
+            <label>Адрес доставки:</label>
+            <input v-model="orderAddress" required />
+          </div>
+        </div>
+        <button type="submit">Оформить заказ</button>
+        <div v-if="orderError" class="text-danger" style="margin-top:1rem;">{{ orderError }}</div>
+        <div v-if="orderSuccess" class="text-success" style="margin-top:1rem;">Заказ успешно оформлен!</div>
+      </form>
     </div>
   </div>
 </template>
@@ -105,6 +138,47 @@ async function decrement(item) {
   }
 }
 
+const isAuth = computed(() => !!localStorage.getItem('token'));
+const orderType = ref('Самовывоз');
+const orderName = ref('');
+const orderPhone = ref('');
+const orderEmail = ref('');
+const orderAddress = ref('');
+const orderError = ref('');
+const orderSuccess = ref(false);
+
+async function submitOrder() {
+  orderError.value = '';
+  orderSuccess.value = false;
+  if (cart.value.length === 0) {
+    orderError.value = 'Корзина пуста';
+    return;
+  }
+  try {
+    const payload = {
+      user_id: isAuth.value ? userId : null,
+      name: isAuth.value ? null : orderName.value,
+      phone: isAuth.value ? null : orderPhone.value,
+      email: isAuth.value ? null : orderEmail.value,
+      status: 'В обработке',
+      total_price: totalPrice.value,
+      order_type: orderType.value,
+      address: orderType.value === 'Доставка' ? orderAddress.value : null,
+      items: cart.value.map(item => ({
+        product_id: item.product_id || item.id,
+        quantity: item.quantity,
+        price: item.price
+      }))
+    };
+    await axios.post('http://localhost:3000/api/orders', payload);
+    orderSuccess.value = true;
+    // Можно очистить корзину или обновить её
+    await fetchCart();
+  } catch (e) {
+    orderError.value = 'Ошибка оформления заказа';
+  }
+}
+
 onMounted(fetchCart);
 </script>
 
@@ -116,4 +190,13 @@ onMounted(fetchCart);
 .cart-item-name { font-weight: bold; font-size: 1.1rem; margin-bottom: 0.5rem; }
 .cart-item-count, .cart-item-price { color: #555; }
 .cart-total { text-align: right; font-size: 1.2rem; margin-top: 2rem; }
+.order-form { background: #f9f9f9; border-radius: 8px; padding: 1rem; margin-top: 1.5rem; }
+.order-form h2 { margin-top: 0; }
+.order-form div { margin-bottom: 1rem; }
+.order-form label { display: block; margin-bottom: 0.5rem; }
+.order-form input, .order-form select { width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; }
+.order-form button { background: #007bff; color: #fff; padding: 0.75rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; }
+.order-form button:disabled { background: #ccc; }
+.text-danger { color: red; }
+.text-success { color: green; }
 </style>
