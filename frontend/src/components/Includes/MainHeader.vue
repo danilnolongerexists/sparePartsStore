@@ -32,7 +32,7 @@
         <img src="@/assets/icons/favorite.svg" alt="Избранное" class="icon-img" />
         <span>Избранное</span>
       </button>
-      <button v-if="is_large_screen" class="icon-btn">
+      <button v-if="is_large_screen" class="icon-btn" @click="$router.push('/cart')">
         <img src="@/assets/icons/cart.svg" alt="Корзина" class="icon-img" />
         <span>Корзина</span>
       </button>

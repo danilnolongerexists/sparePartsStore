@@ -80,6 +80,15 @@ const router = createRouter({
       },
     },
     {
+      name: 'cart',
+      path: '/cart',
+      component: () => import('./components/CartPage.vue'),
+      meta: {
+        title: 'D-Detal | Корзина',
+        requiresAuth: true
+      },
+    },
+    {
       name: 'product',
       path: '/product/:id',
       component: () => import('./components/ProductPage.vue'),
@@ -101,13 +110,13 @@ router.beforeEach((to, from, next) => {
   const protectedRoutes = ['/users', '/products', '/categories', '/favorites','/profile'];
   if (protectedRoutes.includes(to.path) && !isAuth) {
     toast.error('Авторизуйтесь', {
-      position: 'bottom-center', // Позиция уведомления
-      hideProgressBar: true,    // Скрыть полоску прогресса
-      closeButton: false,        // Показать кнопку закрытия
-      draggable: false,          // Разрешить перетаскивание
-      pauseOnHover: true        // Приостановить таймер при наведении
+      position: 'bottom-center',
+      hideProgressBar: true,
+      closeButton: false,
+      draggable: false,
+      pauseOnHover: true
     });
-    next(from.fullPath);
+    next(false);
   } else if (to.name === 'profile' && to.meta.requiresAuth && !isAuth) {
     next('/login');
   } else if ((to.path === '/login' || to.path === '/register') && isAuth && role === 'admin') {

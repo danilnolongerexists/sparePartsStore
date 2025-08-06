@@ -9,7 +9,7 @@
       <img src="@/assets/icons/favorite.svg" alt="Избранное" class="icon-img" />
       <span>Избранное</span>
     </button>
-    <button class="icon-btn">
+    <button class="icon-btn" @click="$router.push('/cart')">
       <img src="@/assets/icons/cart.svg" alt="Корзина" class="icon-img" />
       <span>Корзина</span>
     </button>

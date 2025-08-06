@@ -4,127 +4,72 @@
     <div class="container py-4">
       <h2 class="mb-4">Избранные товары</h2>
       <div class="products-list">
-        <div v-for="product in favoriteProducts" :key="product.id" class="product-card">
-          <img v-if="getFirstPhoto(product.photos)" :src="getFirstPhoto(product.photos)" class="product-img" alt="Фото товара" />
-          <div class="product-info">
-            <div class="product-name">{{ product.name }}</div>
-            <div class="product-price">{{ product.user_price }} ₽</div>
-          </div>
-          <button class="favorite-btn active" @click="toggleFavorite(product.id)">
-            <img src="@/assets/icons/favorite.svg" alt="Избранное" style="width:22px;height:22px;vertical-align:middle;" />
-          </button>
-        </div>
-        <div v-if="!favoriteProducts.length" class="text-muted py-4">Нет избранных товаров</div>
+        <ProductCard
+          v-for="product in products"
+          :key="product.id"
+          :product="product"
+          :cart="cart"
+          :add-to-cart="addToCart"
+          :increment="increment"
+          :decrement="decrement"
+          :showFavorite="true"
+          :showPrice="true"
+          :showName="true"
+          :showImage="true"
+          :favorites="favorites"
+          :add-to-favorites="addToFavorites"
+          :remove-from-favorites="removeFromFavorites"
+          :is-favorite="isFavorite"
+        />
+        <div v-if="!products.length" class="text-muted py-4">Нет избранных товаров</div>
+        <!-- <div v-if="error" class="text-danger py-4">{{ error }}</div> -->
       </div>
     </div>
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
-import MainHeader from './Includes/MainHeader.vue';
 import Navigation from './Includes/Navigation.vue';
-export default {
-  name: 'FavoritesPage',
-  components: { MainHeader, Navigation },
-  data() {
-    return {
-      products: [],
-      userName: '',
-      favoriteIds: [],
-      role: localStorage.getItem('role') || 'user'
-    }
-  },
-  computed: {
-    isAuth() {
-      return !!localStorage.getItem('token');
-    },
-    favoriteProducts() {
-      return this.products.filter(p => this.favoriteIds.includes(p.id));
-    }
-  },
-  methods: {
-    goLogin() {
-      this.$router.push('/login');
-    },
-    goProfile() {
-      this.$router.push('/profile');
-    },
-    getFirstPhoto(photos) {
-      if (!photos) return '';
-      let url = photos.split(',')[0];
-      if (url && !url.startsWith('http')) {
-        url = 'http://localhost:3000' + (url.startsWith('/') ? url : '/' + url);
-      }
-      return url;
-    },
-    async fetchFavorites() {
-      if (!this.isAuth) return;
-      try {
-        const token = localStorage.getItem('token');
-        const userId = localStorage.getItem('userId');
-        const res = await axios.get('/api/favorites', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'x-user-id': userId
-          }
-        });
-        this.favoriteIds = res.data; // массив id товаров
-      } catch {
-        this.favoriteIds = [];
-      }
-    },
-    async toggleFavorite(id) {
-      if (!this.isAuth) return;
-      const token = localStorage.getItem('token');
-      const userId = localStorage.getItem('userId');
-      const idx = this.favoriteIds.indexOf(id);
-      if (idx === -1) {
-        // добавить в избранное
-        await axios.post('/api/favorites', { product_id: id }, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'x-user-id': userId
-          }
-        });
-        this.favoriteIds.push(id);
-      } else {
-        // убрать из избранного
-        await axios.delete(`/api/favorites/${id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'x-user-id': userId
-          }
-        });
-        this.favoriteIds.splice(idx, 1);
-      }
-    },
-    async fetchUserName() {
-      const id = localStorage.getItem('userId');
-      if (!id) return;
-      try {
-        const res = await axios.get(`/api/user/${id}`);
-        this.userName = res.data.first_name + (res.data.last_name ? ' ' + res.data.last_name : '');
-      } catch {}
-    }
-  },
-  async mounted() {
-    if (!this.isAuth) {
-      this.$router.push('/login');
-      return;
-    }
-    // Получаем избранные товары напрямую с бэка
-    const token = localStorage.getItem('token');
-    const userId = localStorage.getItem('userId');
-    const res = await axios.get('/api/favorites/products', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'x-user-id': userId
-      }
-    });
-    this.products = res.data;
-    this.favoriteIds = res.data.map(p => p.id);
-    this.fetchUserName();
-  }
+import ProductCard from './ProductCard.vue';
+import { useCart } from '../useCart';
+import useFavorites from '../useFavorites';
+
+const userName = ref('');
+const error = ref('');
+const isAuth = computed(() => !!localStorage.getItem('token'));
+const { cart, fetchCart, increment, decrement, addToCart } = useCart();
+const { favorites, fetchFavorites, addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
+const products = ref([]);
+
+function goLogin() {
+  window.location.href = '/login';
 }
+function goProfile() {
+  window.location.href = '/profile';
+}
+
+async function fetchUserName() {
+  const id = localStorage.getItem('userId');
+  if (!id) return;
+  try {
+    const res = await axios.get(`/api/user/${id}`);
+    userName.value = res.data.first_name + (res.data.last_name ? ' ' + res.data.last_name : '');
+  } catch {}
+}
+
+onMounted(async () => {
+  // Получаем товары с полями (фото, цена и т.д.)
+  const userId = localStorage.getItem('userId');
+  if (userId) {
+    const res = await axios.get('/api/favorites/products', {
+      headers: { 'x-user-id': userId }
+    });
+    products.value = res.data;
+  }
+  await fetchFavorites();
+  await fetchCart();
+  if (isAuth.value) fetchUserName();
+});
 </script>

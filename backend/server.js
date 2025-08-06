@@ -240,6 +240,11 @@ app.use('/api/products', productsRouter);
 const categoriesRouter = require('./categories')(db, checkAdmin);
 app.use('/api/categories', categoriesRouter);
 
+
+// Подключение роутера для корзины
+const cartRouter = require('./cart')(db);
+app.use('/api/cart', cartRouter);
+
 // Подключение роутера для избранного
 const favoritesRouter = require('./favorites')(db);
 app.use('/api/favorites', (req, res, next) => {
@@ -247,11 +252,6 @@ app.use('/api/favorites', (req, res, next) => {
   req.headers['x-user-id'] = req.headers['x-user-id'] || req.query.user_id || req.body?.user_id || localStorageUserId(req);
   next();
 }, favoritesRouter);
-
-
-// Подключение роутера для корзины (после инициализации db и app)
-const cartRouter = require('./cart')(db);
-app.use('/api/cart', cartRouter);
 
 app.listen(port, () => {
   console.log(`Сервер запущен на http://localhost:${port}`);

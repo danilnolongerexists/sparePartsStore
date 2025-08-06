@@ -14,48 +14,113 @@
         <span v-else>{{ product.user_price }} ₽ <span class="text-muted">(для пользователя)</span></span>
       </div>
       <div class="product-quantity">В наличии: {{ product.quantity }}</div>
+      <div class="product-actions" style="margin-top:1.2rem;display:flex;gap:1.2rem;align-items:center;">
+        <button class="favorite-btn" :class="{active: isFavorite(product.id)}" @click="toggleFavorite(product.id)">
+          <img src="@/assets/icons/favorite.svg" alt="Избранное" style="width:22px;height:22px;vertical-align:middle;" />
+
+        </button>
+        <div class="cart-btns">
+          <template v-if="cartItem">
+            <button @click="decrement(cartItem)">-</button>
+            <span style="margin:0 8px">{{ cartItem.quantity }}</span>
+            <button @click="increment(cartItem)" :disabled="cartItem.quantity >= product.quantity">+</button>
+          </template>
+          <template v-else>
+            <button @click="addToCart(product)">В корзину</button>
+          </template>
+        </div>
+      </div>
     </div>
   </div>
-  <div v-else class="text-center py-5 text-muted">Товар не найден</div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
-export default {
-  name: 'ProductPage',
-  data() {
-    return {
-      product: null,
-      role: localStorage.getItem('role') || 'user',
-    };
-  },
-  computed: {
-    photoList() {
-      if (!this.product || !this.product.photos) return [];
-      return this.product.photos.split(',').filter(Boolean);
-    }
-  },
-  methods: {
-    getPhotoUrl(photo) {
-      if (!photo) return '';
-      if (photo.startsWith('/uploads/')) {
-        return window.location.origin.includes('5173')
-          ? 'http://localhost:3000' + photo
-          : photo;
+import { useCart } from '../useCart';
+
+const product = ref(null);
+const role = localStorage.getItem('role') || 'user';
+const favoriteIds = ref([]);
+const isAuth = computed(() => !!localStorage.getItem('token'));
+const { cart, fetchCart, increment, decrement, addToCart } = useCart();
+
+const photoList = computed(() => {
+  if (!product.value || !product.value.photos) return [];
+  return product.value.photos.split(',').filter(Boolean);
+});
+
+function getPhotoUrl(photo) {
+  if (!photo) return '';
+  if (photo.startsWith('/uploads/')) {
+    return window.location.origin.includes('5173')
+      ? 'http://localhost:3000' + photo
+      : photo;
+  }
+  return photo;
+}
+
+function isFavorite(id) {
+  return favoriteIds.value.includes(id);
+}
+
+async function toggleFavorite(id) {
+  if (!isAuth.value) return;
+  const token = localStorage.getItem('token');
+  const userId = localStorage.getItem('userId');
+  const idx = favoriteIds.value.indexOf(id);
+  if (idx === -1) {
+    await axios.post('/api/favorites', { product_id: id }, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'x-user-id': userId
       }
-      return photo;
-    }
-  },
-  async mounted() {
-    const id = this.$route.params.id;
-    try {
-      const res = await axios.get(`/api/products/${id}`);
-      this.product = res.data;
-    } catch {
-      this.product = null;
-    }
+    });
+    favoriteIds.value.push(id);
+  } else {
+    await axios.delete(`/api/favorites/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'x-user-id': userId
+      }
+    });
+    favoriteIds.value.splice(idx, 1);
   }
 }
+
+const cartItem = computed(() => {
+  if (!product.value) return null;
+  return cart.value.find(i => (i.product_id || i.id) === product.value.id) || null;
+});
+
+async function fetchFavorites() {
+  if (!isAuth.value) return;
+  try {
+    const token = localStorage.getItem('token');
+    const userId = localStorage.getItem('userId');
+    const res = await axios.get('/api/favorites', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'x-user-id': userId
+      }
+    });
+    favoriteIds.value = res.data;
+  } catch {
+    favoriteIds.value = [];
+  }
+}
+
+onMounted(async () => {
+  const id = window.location.pathname.split('/').pop();
+  try {
+    const res = await axios.get(`/api/products/${id}`);
+    product.value = res.data;
+    await fetchFavorites();
+    await fetchCart();
+  } catch {
+    product.value = null;
+  }
+});
 </script>
 
 <style scoped>
