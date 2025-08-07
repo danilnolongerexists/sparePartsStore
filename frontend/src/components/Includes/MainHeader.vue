@@ -38,9 +38,18 @@
             </ul>
           </div>
         </div>
-        <div class="search-wrapper">
-          <input type="text" placeholder="Поиск..." class="search-input" />
-          <img src="@/assets/icons/search.svg" alt="Поиск" class="search-icon" />
+        <div class="search-wrapper" style="position:relative;">
+          <form @submit.prevent="goToSearchPage" style="display: flex; align-items: center; width:100%;">
+            <img src="@/assets/icons/search.svg" alt="Поиск" class="search-icon" style="cursor:pointer" @mousedown.prevent="goToSearchPage" />
+            <input type="text" v-model="searchQuery" @input="onSearchInput" placeholder="Поиск..." class="search-input" @focus="showSearchResults = true" @blur="onSearchBlur" @keydown.enter="goToSearchPage" />
+          </form>
+          <div v-if="showSearchResults && searchResults.length > 0" class="search-results">
+            <div v-for="prod in searchResults" :key="prod.id" class="search-result-item">
+              <img v-if="getFirstPhoto(prod.photos)" :src="getFirstPhoto(prod.photos)" class="search-result-img" @mousedown.prevent="goToProduct(prod.id)" />
+              <span class="search-result-name" @mousedown.prevent="goToProduct(prod.id)">{{ prod.name }}</span>
+              <span class="search-result-price">{{ prod.user_price }} ₽</span>
+            </div>
+          </div>
         </div>
       </div>
       <button v-if="is_large_screen" class="icon-btn" @click="$router.push('/favorites')">
@@ -87,7 +96,11 @@ export default {
     return {
       showAuthModal: false,
       showCategories: false,
-      categories: []
+      categories: [],
+      searchQuery: '',
+      searchResults: [],
+      showSearchResults: false,
+      searchTimeout: null
     }
   },
   computed: {
@@ -128,6 +141,14 @@ export default {
       }
       return `http://localhost:3000/uploads/categories/${photo}`;
     },
+    getFirstPhoto(photos) {
+      if (!photos) return '';
+      let url = photos.split(',')[0];
+      if (url && !url.startsWith('http')) {
+        url = 'http://localhost:3000' + (url.startsWith('/') ? url : '/' + url);
+      }
+      return url;
+    },
     onAuthSuccess() {
       this.showAuthModal = false;
       this.$emit('login');
@@ -135,7 +156,35 @@ export default {
     logout() {
       localStorage.clear();
       window.location.reload();
-    }
+    },
+    goToProduct(id) {
+      this.$router.push(`/product/${id}`);
+      this.showSearchResults = false;
+    },
+    goToSearchPage() {
+      if (!this.searchQuery.trim()) return;
+      this.showSearchResults = false;
+      this.$router.push({ path: '/search', query: { q: this.searchQuery.trim() } });
+    },
+    onSearchInput() {
+      clearTimeout(this.searchTimeout);
+      if (!this.searchQuery.trim()) {
+        this.searchResults = [];
+        return;
+      }
+      this.searchTimeout = setTimeout(this.fetchSearchResults, 300);
+    },
+    async fetchSearchResults() {
+      try {
+        const res = await axios.get(`/api/products?search=${encodeURIComponent(this.searchQuery)}`);
+        this.searchResults = Array.isArray(res.data) ? res.data : (res.data.products || []);
+      } catch {
+        this.searchResults = [];
+      }
+    },
+    onSearchBlur() {
+      setTimeout(() => { this.showSearchResults = false; }, 200);
+    },
   }
 }
 </script>
@@ -196,5 +245,46 @@ export default {
   flex: 1 1 auto;
   display: flex;
   align-items: center;
+}
+.search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  z-index: 2000;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.search-result-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.search-result-item:hover {
+  background: #f0f0f0;
+}
+.search-result-img {
+  width: 38px;
+  height: 38px;
+  object-fit: cover;
+  border-radius: 4px;
+  background: #f5f5f5;
+}
+.search-result-name {
+  flex: 1 1 auto;
+  color: #222;
+  font-weight: 500;
+  text-decoration: underline;
+}
+.search-result-price {
+  color: #007bff;
+  font-weight: 500;
+  margin-left: 8px;
 }
 </style>

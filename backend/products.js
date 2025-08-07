@@ -46,7 +46,7 @@ module.exports = (db, checkAdmin) => {
   });
   // Получить все товары с категориями или по категории
   router.get('/', (req, res) => {
-    const { category_id } = req.query;
+    const { category_id, search } = req.query;
     let sql = `
       SELECT p.*, 
         GROUP_CONCAT(pc.category_id) AS category_ids,
@@ -56,9 +56,17 @@ module.exports = (db, checkAdmin) => {
       LEFT JOIN categories c ON pc.category_id = c.id
     `;
     const params = [];
+    let where = [];
     if (category_id) {
-      sql += ' WHERE pc.category_id = ?';
+      where.push('pc.category_id = ?');
       params.push(category_id);
+    }
+    if (search) {
+      where.push('(p.name LIKE ? OR p.description LIKE ?)');
+      params.push(`%${search}%`, `%${search}%`);
+    }
+    if (where.length) {
+      sql += ' WHERE ' + where.join(' AND ');
     }
     sql += ' GROUP BY p.id';
     db.query(sql, params, (err, results) => {

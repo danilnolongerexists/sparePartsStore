@@ -114,6 +114,14 @@ const router = createRouter({
         title: 'D-Detal | Категория'
       }
     },
+    {
+      name: 'search',
+      path: '/search',
+      component: () => import('./components/SearchResultsPage.vue'),
+      meta: {
+        title: 'D-Detal | Поиск'
+      }
+    },
   ],
   scrollBehavior(to, from, savedPosition) {
     if (to.hash) return;
