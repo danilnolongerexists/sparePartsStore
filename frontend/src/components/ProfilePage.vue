@@ -53,15 +53,28 @@
           <div v-for="order in orders" :key="order.id" class="order-card">
             <div class="order-header">
               <b>Заказ №{{ order.id }}</b> — {{ order.status }}<br/>
-              <span class="order-date">{{ formatDate(order.created_at) }}</span>
+              <span class="order-date">{{ formatDateNoSec(order.order_date) }}</span>
+              <br>
               <span class="order-sum">Сумма: {{ order.total_price }} ₽</span>
             </div>
-            <div class="order-items">
-              <div v-for="item in order.items" :key="item.id" class="order-item">
+            <div v-for="item in order.items" :key="item.id" class="order-item order-item-with-img">
+              <template v-if="orderProducts[item.product_id]">
+                <router-link :to="'/product/' + item.product_id" class="order-item-img-link">
+                  <img :src="getFirstPhoto(orderProducts[item.product_id].photos)" alt="" class="order-item-img" />
+                </router-link>
+                <div class="order-item-info">
+                  <router-link :to="'/product/' + item.product_id" class="order-item-title">
+                    {{ orderProducts[item.product_id].name }}
+                  </router-link>
+                  <div>Кол-во: {{ item.quantity }}</div>
+                  <div>Цена: {{ item.price }} ₽</div>
+                </div>
+              </template>
+              <template v-else>
                 <span>Товар: {{ item.product_id }}</span>
                 <span>Кол-во: {{ item.quantity }}</span>
                 <span>Цена: {{ item.price }} ₽</span>
-              </div>
+              </template>
             </div>
           </div>
         </div>
@@ -92,7 +105,8 @@ export default {
       },
       loading: true,
       error: '',
-      toast: null
+      toast: null,
+      orderProducts: {}
     }
   },
   watch: {
@@ -130,8 +144,12 @@ export default {
     }
   },
   methods: {
+    formatDateNoSec(date) {
+      if (!date) return '';
+      return dayjs(date).format('DD.MM.YYYY HH:mm');
+    },
     onOrdersTabClick() {
-      console.log('Клик по вкладке Заказы');
+      // console.log('Клик по вкладке Заказы');
       this.tab = 'orders';
     },
     async fetchOrders() {
@@ -139,11 +157,24 @@ export default {
       this.ordersLoading = true;
       try {
         const userId = await this.getUserId();
-        console.log('userId for orders:', userId);
+        // console.log('userId for orders:', userId);
         if (!userId) throw new Error('Нет userId');
         const res = await axios.get(`/api/orders?user_id=${userId}`);
-        console.log('orders response:', res.data);
+        // console.log('orders response:', res.data);
         this.orders = res.data;
+        // Собираем все product_id из всех заказов
+        const allProductIds = Array.from(new Set(
+          this.orders.flatMap(order => order.items.map(item => item.product_id))
+        ));
+        if (allProductIds.length) {
+          const prodRes = await axios.post('/api/products/by-ids', { ids: allProductIds });
+          this.orderProducts = {};
+          for (const p of prodRes.data) {
+            this.orderProducts[p.id] = p;
+          }
+        } else {
+          this.orderProducts = {};
+        }
       } catch (e) {
         console.log('fetchOrders error:', e);
         this.orders = [];
@@ -218,6 +249,64 @@ export default {
       value = value.slice(0, 11);
       this.form.phone = '+' + value;
     },
+    getFirstPhoto(photos) {
+      if (!photos) return '';
+      let url = photos.split(',')[0];
+      if (url && !url.startsWith('http')) {
+        url = 'http://localhost:3000' + (url.startsWith('/') ? url : '/' + url);
+      }
+      return url;
+    },
   }
 }
 </script>
+
+<style scoped>
+.order-item-with-img {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  background: #f8f8f8;
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+.order-item-img-link {
+  display: block;
+  min-width: 64px;
+  max-width: 80px;
+}
+.order-item-img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  background: #fff;
+  transition: box-shadow 0.2s;
+}
+.order-item-img-link:hover .order-item-img {
+  box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+}
+.order-item-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.order-item-title {
+  font-weight: 500;
+  color: #1976d2;
+  text-decoration: none;
+  margin-bottom: 2px;
+  transition: color 0.2s;
+}
+.order-item-title:hover {
+  color: #0d47a1;
+  text-decoration: underline;
+}
+.order-item-info > div {
+  font-size: 0.98em;
+  color: #444;
+  margin-bottom: 2px;
+}
+</style>

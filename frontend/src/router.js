@@ -62,6 +62,16 @@ const router = createRouter({
       }
     },
     {
+      name: 'orders',
+      path: '/orders',
+      component: () => import('./components/Admin/OrderManagement.vue'),
+      meta: {
+        title: 'D-Detal | Управление заказами',
+        requiresAuth: true,
+        requiresAdmin: true
+      }
+    },
+    {
       name: 'profile',
       path: '/profile',
       component: () => import('./components/ProfilePage.vue'),
@@ -107,7 +117,7 @@ router.beforeEach((to, from, next) => {
   const isAuth = !!localStorage.getItem('token');
   const role = localStorage.getItem('role');
   // Пути, для которых нужна авторизация, но не хотим редиректить на /login
-  const protectedRoutes = ['/users', '/products', '/categories', '/favorites','/profile'];
+  const protectedRoutes = ['/users', '/products', '/categories', '/favorites', '/profile', '/orders'];
   if (protectedRoutes.includes(to.path) && !isAuth) {
     toast.error('Авторизуйтесь', {
       position: 'bottom-center',

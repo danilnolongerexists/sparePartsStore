@@ -36,16 +36,6 @@ app.get('/', (req, res) => {
   res.send('Hello, World!');
 });
 
-// Пример запроса к базе данных
-app.get('/test-db', (req, res) => {
-  db.query('SHOW TABLES', (err, results) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    res.json(results);
-  });
-});
-
 // Middleware для проверки роли admin (заглушка, для реального проекта используйте JWT)
 function checkAdmin(req, res, next) {
   const role = req.headers['x-user-role']; // Ожидаем роль в заголовке

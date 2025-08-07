@@ -2,6 +2,37 @@ const express = require('express');
 const router = express.Router();
 
 module.exports = (db) => {
+  // Получить все заказы для админки
+  router.get('/all', async (req, res) => {
+    try {
+      const [orders] = await db.promise().query(
+        `SELECT o.*, 
+                u.first_name, u.last_name, u.patronymic, u.phone AS user_phone, u.email AS user_email
+         FROM orders o
+         LEFT JOIN users u ON o.user_id = u.id
+         ORDER BY o.id DESC`
+      );
+      if (!orders.length) return res.json([]);
+      const orderIds = orders.map(o => o.id);
+      const [items] = await db.promise().query(
+        `SELECT * FROM order_items WHERE order_id IN (${orderIds.map(() => '?').join(',')})`,
+        orderIds
+      );
+      const itemsByOrder = {};
+      for (const item of items) {
+        if (!itemsByOrder[item.order_id]) itemsByOrder[item.order_id] = [];
+        itemsByOrder[item.order_id].push(item);
+      }
+      const result = orders.map(order => ({
+        ...order,
+        items: itemsByOrder[order.id] || []
+      }));
+      res.json(result);
+    } catch (e) {
+      console.error('Ошибка получения всех заказов:', e);
+      res.status(500).json({ error: 'Ошибка получения заказов' });
+    }
+  });
   // Получить заказы пользователя (и гостей по телефону/email)
   router.get('/', async (req, res) => {
     const { user_id, phone, email } = req.query;
@@ -47,8 +78,28 @@ module.exports = (db) => {
     }
   });
   // Создание заказа
+  // Обновить статус заказа
+  router.put('/:id/status', async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+    if (!status) {
+      return res.status(400).json({ error: 'Не передан статус' });
+    }
+    try {
+      const [result] = await db.promise().query(
+        'UPDATE orders SET status = ? WHERE id = ?',
+        [status, id]
+      );
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'Заказ не найден' });
+      }
+      res.json({ success: true });
+    } catch (e) {
+      console.error('Ошибка обновления статуса заказа:', e);
+      res.status(500).json({ error: 'Ошибка обновления статуса заказа' });
+    }
+  });
   router.post('/', async (req, res) => {
-
     let {
       user_id,
       name,
@@ -97,3 +148,4 @@ module.exports = (db) => {
 
   return router;
 };
+

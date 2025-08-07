@@ -10,6 +10,8 @@
           <a class="admin-link" :class="{active: $route.path==='/products'}" @click.prevent="$router.push('/products')">Товары</a>
           <span class="divider">/</span>
           <a class="admin-link" :class="{active: $route.path==='/categories'}" @click.prevent="$router.push('/categories')">Категории</a>
+          <span class="divider">/</span>
+          <a class="admin-link" :class="{active: $route.path==='/orders'}" @click.prevent="$router.push('/orders')">Заказы</a>
         </nav>
       </div>
       <div class="d-flex align-items-center gap-2">
@@ -74,7 +76,7 @@ export default {
   },
   computed: {
     isAdminPage() {
-      return ['/users', '/products', '/categories'].includes(this.$route.path);
+      return ['/users', '/products', '/categories', '/orders'].includes(this.$route.path);
     }
   },
   setup() {
