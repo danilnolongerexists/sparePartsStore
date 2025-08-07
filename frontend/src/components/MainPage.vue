@@ -1,6 +1,5 @@
 <template>
   <div class="main-page">
-    <Navigation :isAuth="isAuth" :userName="userName" @login="goLogin" @profile="goProfile" />
     <section class="products-section">
       <h2 class="mb-3">Популярные товары</h2>
       <div class="products-list">
@@ -29,10 +28,10 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
-import Navigation from './Includes/Navigation.vue';
+
 import ProductCard from './ProductCard.vue';
 import { useCart } from '../useCart';
-import useFavorites from '../useFavorites';
+import { useFavorites } from '../useFavorites';
 
 const userName = ref('');
 const products = ref([]);

@@ -1,7 +1,7 @@
 import { ref } from 'vue';
 import axios from 'axios';
 
-export default function useFavorites() {
+export function useFavorites() {
   const favorites = ref([]);
 
   const fetchFavorites = async () => {

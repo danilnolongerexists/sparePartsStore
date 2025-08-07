@@ -44,20 +44,25 @@ module.exports = (db, checkAdmin) => {
       res.json(products);
     });
   });
-  // Получить все товары с категориями
+  // Получить все товары с категориями или по категории
   router.get('/', (req, res) => {
-    const sql = `
+    const { category_id } = req.query;
+    let sql = `
       SELECT p.*, 
         GROUP_CONCAT(pc.category_id) AS category_ids,
         GROUP_CONCAT(c.name) AS category_names
       FROM products p
       LEFT JOIN product_categories pc ON p.id = pc.product_id
       LEFT JOIN categories c ON pc.category_id = c.id
-      GROUP BY p.id
     `;
-    db.query(sql, (err, results) => {
+    const params = [];
+    if (category_id) {
+      sql += ' WHERE pc.category_id = ?';
+      params.push(category_id);
+    }
+    sql += ' GROUP BY p.id';
+    db.query(sql, params, (err, results) => {
       if (err) return res.status(500).json({ error: err.message });
-      // Преобразуем строки в массивы
       const products = results.map(row => ({
         ...row,
         category_ids: row.category_ids ? row.category_ids.split(',').map(Number) : [],

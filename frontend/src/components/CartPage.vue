@@ -7,7 +7,16 @@
       <div v-for="item in (isAuth ? cart : detailedCart)" :key="item.id" class="cart-item">
         <img :src="getImageUrl(getFirstPhoto(item.photos))" alt="" class="cart-item-img" style="cursor:pointer" @click="goToProduct(item.product_id || item.id)" />
         <div class="cart-item-info">
-          <div class="cart-item-name" style="cursor:pointer" @click="goToProduct(item.product_id || item.id)">{{ item.name }}</div>
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <div class="cart-item-name" style="cursor:pointer" @click="goToProduct(item.product_id || item.id)">{{ item.name }}</div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <button @click="toggleFavorite(item)" :title="isItemFavorite(item) ? 'Убрать из избранного' : 'В избранное'" style="background:none; border:none; font-size:1.3em; color:#e74c3c; cursor:pointer;">
+                <span v-if="isItemFavorite(item)">♥</span>
+                <span v-else>♡</span>
+              </button>
+              <button @click="removeAllFromCart(item)" title="Удалить товар из корзины" style="background:none; border:none; font-size:1.2em; color:#888; cursor:pointer;">✖</button>
+            </div>
+          </div>
           <div class="cart-item-controls">
             <button @click="async () => { await decrement(item); await loadDetailedCart(); }">-</button>
             <span style="margin:0 8px">{{ item.quantity }}</span>
@@ -57,20 +66,51 @@
 </template>
 
 <script setup>
-
 import { ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
 import { useCart } from '../useCart';
+import { useFavorites } from '../useFavorites';
+
+const isAuth = computed(() => !!localStorage.getItem('token'));
 
 const { cart, loading, fetchCart, increment, decrement, detailedCart, loadDetailedCart } = useCart();
+const { favorites, addToFavorites, removeFromFavorites, fetchFavorites, isFavorite } = useFavorites();
 
+function isItemFavorite(item) {
+  const pid = item.product_id || item.id;
+  return isFavorite(pid);
+}
 
+async function toggleFavorite(item) {
+  const pid = item.product_id || item.id;
+  if (isFavorite(pid)) {
+    await removeFromFavorites(pid);
+  } else {
+    await addToFavorites(pid);
+  }
+}
 
+async function removeAllFromCart(item) {
+  // Для авторизованных — удаляем по user_id и product_id, для гостей — по id
+  const pid = item.product_id || item.id;
+  if (isAuth.value) {
+    await axios.delete(`/api/cart?user_id=${userId}&product_id=${pid}`);
+    await fetchCart();
+    await loadDetailedCart();
+  } else {
+    // Для гостей detailedCart — массив, удаляем по id
+    const idx = detailedCart.value.findIndex(i => (i.product_id || i.id) === pid);
+    if (idx !== -1) {
+      detailedCart.value.splice(idx, 1);
+    }
+  }
+}
 
 onMounted(async () => {
   await fetchCart();
   await loadDetailedCart();
+  await fetchFavorites();
 });
 
 watch(cart, loadDetailedCart, { deep: true });
@@ -109,7 +149,6 @@ function goToProduct(id) {
 }
 
 
-const isAuth = computed(() => !!localStorage.getItem('token'));
 const orderType = ref('Самовывоз');
 const orderName = ref('');
 const orderPhone = ref('');

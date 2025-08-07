@@ -106,6 +106,14 @@ const router = createRouter({
         title: 'D-Detal | Товар'
       }
     },
+    {
+      name: 'category',
+      path: '/category/:id',
+      component: () => import('./components/CategoryPage.vue'),
+      meta: {
+        title: 'D-Detal | Категория'
+      }
+    },
   ],
   scrollBehavior(to, from, savedPosition) {
     if (to.hash) return;
