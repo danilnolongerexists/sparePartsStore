@@ -12,23 +12,7 @@ const router = createRouter({
       path: '/',
       component: () => import('./components/MainPage.vue'),
       meta: {
-        title: 'D-Detal | Главная'
-      }
-    },
-    {
-      name: 'login',
-      path: '/login',
-      component: () => import('./components/Login.vue'),
-      meta: {
-        title: 'D-Detal | Вход',
-      }
-    },
-    {
-      name: 'register',
-      path: '/register',
-      component: () => import('./components/Register.vue'),
-      meta: {
-        title: 'D-Detal | Регистрация',
+        title: 'Главная | D-Detal'
       }
     },
     {
@@ -36,7 +20,7 @@ const router = createRouter({
       path: '/users',
       component: () => import('./components/Admin/UserManagement.vue'),
       meta: {
-        title: 'D-Detal | Управление пользователями',
+        title: 'Управление пользователями | D-Detal',
         requiresAuth: true,
         requiresAdmin: true
       }
@@ -46,7 +30,7 @@ const router = createRouter({
       path: '/products',
       component: () => import('./components/Admin/ProductManagement.vue'),
       meta: {
-        title: 'D-Detal | Управление товарами',
+        title: 'Управление товарами | D-Detal',
         requiresAuth: true,
         requiresAdmin: true
       }
@@ -56,7 +40,7 @@ const router = createRouter({
       path: '/categories',
       component: () => import('./components/Admin/CategoryManagement.vue'),
       meta: {
-        title: 'D-Detal | Управление категориями',
+        title: 'Управление категориями | D-Detal',
         requiresAuth: true,
         requiresAdmin: true
       }
@@ -66,7 +50,7 @@ const router = createRouter({
       path: '/orders',
       component: () => import('./components/Admin/OrderManagement.vue'),
       meta: {
-        title: 'D-Detal | Управление заказами',
+        title: 'Управление заказами | D-Detal',
         requiresAuth: true,
         requiresAdmin: true
       }
@@ -85,7 +69,7 @@ const router = createRouter({
       path: '/favorites',
       component: () => import('./components/FavoritesPage.vue'),
       meta: {
-        title: 'D-Detal | Избранное',
+        title: 'Избранное | D-Detal',
         requiresAuth: true
       },
     },
@@ -94,7 +78,7 @@ const router = createRouter({
       path: '/cart',
       component: () => import('./components/CartPage.vue'),
       meta: {
-        title: 'D-Detal | Корзина',
+        title: 'Корзина | D-Detal',
         requiresAuth: true
       },
     },

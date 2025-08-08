@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import MainHeader from './components/Includes/MainHeader.vue';
 import Navigation from './components/Includes/Navigation.vue';
+import Footer from './components/Includes/Footer.vue';
 import axios from 'axios';
 
 const route = useRoute();
@@ -47,6 +48,7 @@ watch(isAuth, (val) => {
     <MainHeader :isAuth="isAuth" :userName="userName" @login="handleLogin" @profile="goProfile" />
     <Navigation :isAuth="isAuth" :userName="userName" @login="goLogin" @profile="goProfile" />
     <router-view />
+    <Footer />
   </div>
 </template>
 

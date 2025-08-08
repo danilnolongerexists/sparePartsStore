@@ -4,63 +4,90 @@
     <div v-if="loading" class="search-loading">Загрузка...</div>
     <div v-else-if="products.length === 0" class="search-empty">Ничего не найдено</div>
     <div v-else class="search-products">
-      <div v-for="prod in products" :key="prod.id" class="search-product-item" @click="goToProduct(prod.id)">
-        <img v-if="getFirstPhoto(prod.photos)" :src="getFirstPhoto(prod.photos)" class="search-product-img" />
-        <div class="search-product-info">
-          <div class="search-product-name">{{ prod.name }}</div>
-          <div class="search-product-price">{{ prod.user_price }} ₽</div>
-        </div>
-      </div>
+      <ProductCard
+        v-for="prod in products"
+        :key="prod.id"
+        :product="prod"
+        :cart="cart"
+        :add-to-cart="addToCart"
+        :increment="increment"
+        :decrement="decrement"
+        :favorites="favorites"
+        :add-to-favorites="addToFavorites"
+        :remove-from-favorites="removeFromFavorites"
+        :is-favorite="isFavorite"
+      />
     </div>
   </div>
 </template>
 
 <script>
 import axios from 'axios';
+import ProductCard from './ProductCard.vue';
+import { useCart } from '../useCart';
+import { useFavorites } from '../useFavorites';
+import { ref, onMounted, watch, getCurrentInstance } from 'vue';
+
 export default {
   name: 'SearchResultsPage',
-  data() {
-    return {
-      products: [],
-      loading: true
-    }
-  },
-  watch: {
-    '$route.query.q': {
-      immediate: true,
-      handler(val) {
-        this.fetchResults(val);
-      }
-    }
-  },
-  methods: {
-    async fetchResults(query) {
+  components: { ProductCard },
+  setup() {
+    const products = ref([]);
+    const loading = ref(true);
+    const { cart, fetchCart, increment, decrement, addToCart } = useCart();
+    const { favorites, fetchFavorites, addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
+
+    const fetchResults = async (query) => {
       if (!query) {
-        this.products = [];
-        this.loading = false;
+        products.value = [];
+        loading.value = false;
         return;
       }
-      this.loading = true;
+      loading.value = true;
       try {
         const res = await axios.get(`/api/products?search=${encodeURIComponent(query)}`);
-        this.products = Array.isArray(res.data) ? res.data : (res.data.products || []);
+        products.value = Array.isArray(res.data) ? res.data : (res.data.products || []);
       } catch {
-        this.products = [];
+        products.value = [];
       } finally {
-        this.loading = false;
+        loading.value = false;
       }
-    },
-    getFirstPhoto(photos) {
-      if (!photos) return '';
-      let url = photos.split(',')[0];
-      if (url && !url.startsWith('http')) {
-        url = 'http://localhost:3000' + (url.startsWith('/') ? url : '/' + url);
-      }
-      return url;
-    },
-    goToProduct(id) {
-      this.$router.push(`/product/${id}`);
-    }
+    };
+
+
+
+    // Используем $route.query.q для реактивного поиска
+    const instance = getCurrentInstance();
+    watch(
+      () => instance.proxy.$route.query.q,
+      (q) => {
+        fetchResults(q);
+      },
+      { immediate: true }
+    );
+
+    onMounted(() => {
+      fetchCart();
+      fetchFavorites();
+    });
+
+    const goToProduct = (id) => {
+      window.location.href = `/product/${id}`;
+    };
+
+    return {
+      products,
+      loading,
+      cart,
+      increment,
+      decrement,
+      addToCart,
+      favorites,
+      addToFavorites,
+      removeFromFavorites,
+      isFavorite,
+      goToProduct
+    };
   }
 }
 </script>
@@ -73,44 +100,8 @@ export default {
 }
 .search-products {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 1.2rem;
-}
-.search-product-item {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 0.7rem 1rem;
-  background: #f9f9f9;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.search-product-item:hover {
-  background: #e6f0ff;
-}
-.search-product-img {
-  width: 60px;
-  height: 60px;
-  object-fit: cover;
-  border-radius: 6px;
-  background: #f5f5f5;
-}
-.search-product-info {
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.search-product-name {
-  font-size: 1.1rem;
-  font-weight: 500;
-  color: #222;
-  text-decoration: underline;
-}
-.search-product-price {
-  color: #007bff;
-  font-weight: 500;
 }
 .search-loading, .search-empty {
   color: #888;

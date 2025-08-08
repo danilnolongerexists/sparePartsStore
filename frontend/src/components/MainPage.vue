@@ -19,9 +19,7 @@
         <div v-if="!products.length" class="text-muted py-4">Нет товаров для отображения</div>
       </div>
     </section>
-    <footer class="main-footer">
-      <p>&copy; 2025 Магазин запчастей для бытовой техники</p>
-    </footer>
+
   </div>
 </template>
 

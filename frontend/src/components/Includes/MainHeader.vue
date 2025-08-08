@@ -40,8 +40,10 @@
         </div>
         <div class="search-wrapper" style="position:relative;">
           <form @submit.prevent="goToSearchPage" style="display: flex; align-items: center; width:100%;">
-            <img src="@/assets/icons/search.svg" alt="Поиск" class="search-icon" style="cursor:pointer" @mousedown.prevent="goToSearchPage" />
             <input type="text" v-model="searchQuery" @input="onSearchInput" placeholder="Поиск..." class="search-input" @focus="showSearchResults = true" @blur="onSearchBlur" @keydown.enter="goToSearchPage" />
+            <button class="search-button" style="cursor:pointer" @mousedown.prevent="goToSearchPage">
+              <img src="@/assets/icons/search.svg" alt="Поиск" class="search-icon" />
+            </button>
           </form>
           <div v-if="showSearchResults && searchResults.length > 0" class="search-results">
             <div v-for="prod in searchResults" :key="prod.id" class="search-result-item">

@@ -31,6 +31,7 @@
               <th>Email</th>
               <th>Сумма</th>
               <th>Тип</th>
+              <th v-if="orders.some(o => o.order_type === 'Доставка')">Адрес</th>
               <th class="text-center">Действия</th>
             </tr>
           </thead>
@@ -55,6 +56,11 @@
               <td>{{ order.user_email || order.email || '-' }}</td>
               <td>{{ order.total_price }} ₽</td>
               <td>{{ order.order_type }}</td>
+              <td v-if="orders.some(o => o.order_type === 'Доставка')">
+                <template v-if="order.order_type === 'Доставка'">
+                  {{ order.address || order.delivery_address || '-' }}
+                </template>
+              </td>
               <td class="text-center">
                 <button class="btn btn-outline-info btn-sm me-1" @click="openOrderModal(order)">
                   <i class="bi bi-eye"></i> <span class="ms-1">Товары</span>
@@ -132,13 +138,11 @@
 
 <script>
 // ...existing code...
-import AdminHeader from './AdminHeader.vue';
 import dayjs from 'dayjs';
 import axios from 'axios';
 
 export default {
   name: 'OrderManagement',
-  components: { AdminHeader },
   data() {
     return {
       orders: [],
