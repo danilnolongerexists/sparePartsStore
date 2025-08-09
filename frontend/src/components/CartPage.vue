@@ -187,7 +187,10 @@ const getImageUrl = (img) => {
 
 const totalPrice = computed(() => {
   const arr = isAuth.value ? cart.value : detailedCart.value;
-  return arr.reduce((sum, item) => sum + (item.price || item.user_price || 0) * item.quantity, 0);
+  return arr.reduce((sum, item) => {
+    const qty = isAuth.value ? item.quantity : item.cartQuantity;
+    return sum + (item.price || item.user_price || 0) * qty;
+  }, 0);
 });
 
 function goToProduct(id) {
