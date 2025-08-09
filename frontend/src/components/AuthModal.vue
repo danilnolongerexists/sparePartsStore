@@ -108,6 +108,7 @@ export default {
         localStorage.setItem('userName', (firstName + (lastName ? ' ' + lastName : '')).trim());
         localStorage.setItem('email', res.data.email);
         this.$emit('success');
+        window.location.reload();
       } catch (e) {
         this.loginError = e.response?.data?.error || 'Ошибка входа';
       }
@@ -116,9 +117,30 @@ export default {
       this.registerError = '';
       try {
         await axios.post('/api/register', this.registerForm);
-        this.isLogin = true;
+        // После успешной регистрации сразу логинимся
+        const loginData = { email: this.registerForm.email, password: this.registerForm.password };
+        await this.loginWithData(loginData);
       } catch (e) {
         this.registerError = e.response?.data?.error || 'Ошибка регистрации';
+      }
+    },
+    async loginWithData(data) {
+      // Логин с передачей данных (используется после регистрации)
+      this.loginError = '';
+      try {
+        const res = await axios.post('/api/login', data);
+        const userId = res.data.userId || res.data.id;
+        const firstName = res.data.first_name || res.data.firstName || '';
+        const lastName = res.data.last_name || res.data.lastName || '';
+        localStorage.setItem('token', res.data.token);
+        localStorage.setItem('role', res.data.role);
+        localStorage.setItem('userId', userId);
+        localStorage.setItem('userName', (firstName + (lastName ? ' ' + lastName : '')).trim());
+        localStorage.setItem('email', res.data.email);
+        this.$emit('success');
+        window.location.reload();
+      } catch (e) {
+        this.loginError = e.response?.data?.error || 'Ошибка входа';
       }
     }
   }

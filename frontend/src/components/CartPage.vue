@@ -145,11 +145,12 @@ async function removeAllFromCart(item) {
     await fetchCart();
     await loadDetailedCart();
   } else {
-    // Для гостей detailedCart — массив, удаляем по id
-    const idx = detailedCart.value.findIndex(i => (i.product_id || i.id) === pid);
-    if (idx !== -1) {
-      detailedCart.value.splice(idx, 1);
-    }
+    // Для гостей: удаляем из localStorage и обновляем cart/detailedCart
+    let localCart = JSON.parse(localStorage.getItem('cart') || '[]');
+    localCart = localCart.filter(i => i.id !== pid);
+    localStorage.setItem('cart', JSON.stringify(localCart));
+    await fetchCart();
+    await loadDetailedCart();
   }
 }
 
