@@ -17,7 +17,7 @@ module.exports = (db) => {
     let priceField = 'user_price';
     if (role === 'master') priceField = 'master_price';
     db.query(
-      `SELECT carts.id, carts.product_id, carts.quantity, products.name, products.${priceField} AS price, products.photos 
+      `SELECT carts.id, carts.product_id, carts.quantity, products.name, products.${priceField} AS price, products.photos, products.quantity AS product_quantity
        FROM carts 
        JOIN products ON carts.product_id = products.id 
        WHERE carts.user_id = ?`,

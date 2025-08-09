@@ -46,8 +46,9 @@ export function useCart() {
       const { data } = await axios.post('http://localhost:3000/api/products/by-ids', { ids });
       detailedCart.value = ids.map(id => {
         const prod = data.find(p => p.id === id);
-        const qty = cart.value.find(i => i.id === id)?.quantity || 1;
-        return prod ? { ...prod, quantity: qty } : null;
+        const cartQty = cart.value.find(i => i.id === id)?.quantity || 1;
+        // quantity — максимум из products, cartQuantity — текущее в корзине
+        return prod ? { ...prod, cartQuantity: cartQty } : null;
       }).filter(Boolean);
       console.log('cart.value:', cart.value);
       console.log('detailedCart (guest):', detailedCart.value);
@@ -57,29 +58,36 @@ export function useCart() {
     }
   }
 
-  function increment(item) {
-    const userId = localStorage.getItem('userId');
-    if (item.quantity >= (item.product_quantity || 99)) return;
-    if (!userId) {
-      // Гость: обновляем localStorage
-      let localCart = JSON.parse(localStorage.getItem('cart') || '[]');
-      localCart = localCart.map(i =>
-        (i.id === (item.product_id || item.id)) ? { ...i, quantity: i.quantity + 1 } : i
-      );
-      localStorage.setItem('cart', JSON.stringify(localCart));
-      fetchCart();
-      loadDetailedCart();
-      return;
-    }
-    // Авторизованный: backend
-    axios.post('http://localhost:3000/api/cart', {
-      user_id: userId,
-      product_id: item.product_id || item.id,
-      quantity: item.quantity + 1
-    })
-      .then(fetchCart)
-      .catch(() => {});
+function increment(item) {
+  const userId = localStorage.getItem('userId');
+  if (!userId) {
+    // Для гостей: ограничение по максимальному количеству товара из product_quantity (или другого поля из products)
+    const detailedCartItem = detailedCart.value.find(i => (i.product_id || i.id) === (item.product_id || item.id));
+    const maxQty = detailedCartItem ? (detailedCartItem.product_quantity || detailedCartItem.quantity || 99) : 99;
+    const cartQty = detailedCartItem ? (detailedCartItem.cartQuantity || 1) : 1;
+    if (cartQty >= maxQty) return;
+    let localCart = JSON.parse(localStorage.getItem('cart') || '[]');
+    localCart = localCart.map(i =>
+      (i.id === (item.product_id || item.id)) ? { ...i, quantity: i.quantity + 1 } : i
+    );
+    localStorage.setItem('cart', JSON.stringify(localCart));
+    fetchCart();
+    loadDetailedCart();
+    return;
   }
+  // Авторизованный: backend, ограничение по product_quantity или quantity
+  // Найти актуальный объект корзины по product_id
+  const cartItem = cart.value.find(i => (i.product_id || i.id) === (item.product_id || item.id));
+  const maxQty = cartItem ? (cartItem.product_quantity || 99) : 99;
+  if (!cartItem || cartItem.quantity >= maxQty) return;
+  axios.post('http://localhost:3000/api/cart', {
+    user_id: userId,
+    product_id: cartItem.product_id,
+    quantity: cartItem.quantity + 1
+  })
+    .then(fetchCart)
+    .catch(() => {});
+}
 
   function decrement(item) {
     const userId = localStorage.getItem('userId');

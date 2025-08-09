@@ -1,8 +1,8 @@
 <template>
   <div class="cart-page">
     <h1>Корзина</h1>
-    <div v-if="loading">Загрузка...</div>
-    <div v-else-if="cart.length === 0">Корзина пуста</div>
+    <!-- <div v-if="loading"></div> -->
+    <div v-if="cart.length === 0">Корзина пуста</div>
     <div v-else>
       <div v-for="item in (isAuth ? cart : detailedCart)" :key="item.id" class="cart-item">
         <img :src="getImageUrl(getFirstPhoto(item.photos))" alt="" class="cart-item-img" style="cursor:pointer" @click="goToProduct(item.product_id || item.id)" />
@@ -18,9 +18,16 @@
             </div>
           </div>
           <div class="cart-item-controls">
-            <button @click="async () => { await decrement(item); await loadDetailedCart(); }">-</button>
-            <span style="margin:0 8px">{{ item.quantity }}</span>
-            <button @click="async () => { await increment(item); await loadDetailedCart(); }" :disabled="item.quantity >= (item.product_quantity || 99)">+</button>
+            <button @click="decrementCartItem(item)">-</button>
+            <span style="margin:0 8px">{{ isAuth ? item.quantity : item.cartQuantity }}</span>
+            <button
+              @click="incrementCartItem(item)"
+              :disabled="
+                isAuth
+                  ? item.quantity >= (item.product_quantity || 99)
+                  : item.cartQuantity >= (item.product_quantity || item.quantity || 99)
+              "
+            >+</button>
           </div>
           <div class="cart-item-price">Цена: {{ item.price || item.user_price }} ₽</div>
         </div>
@@ -44,11 +51,14 @@
           </div>
           <div>
             <label>Телефон:</label>
-            <input v-model="orderPhone" required />
+            <input v-model="orderPhone" required maxlength="12" pattern="^\+7\d{10}$"
+              @input="onPhoneInput" />
+            <div v-if="orderPhone && !/^\+7\d{10}$/.test(orderPhone)" class="text-danger" style="font-size:0.95em;">Введите номер в формате +7XXXXXXXXXX</div>
           </div>
           <div>
             <label>Email:</label>
-            <input v-model="orderEmail" type="email" />
+            <input v-model="orderEmail" type="email" @input="onEmailInput" required />
+            <div v-if="orderEmail && !isValidEmail(orderEmail)" class="text-danger" style="font-size:0.95em;">Введите корректный email</div>
           </div>
         </div>
         <div v-if="orderType === 'Доставка'">
@@ -76,6 +86,42 @@ const isAuth = computed(() => !!localStorage.getItem('token'));
 
 const { cart, loading, fetchCart, increment, decrement, detailedCart, loadDetailedCart } = useCart();
 const { favorites, addToFavorites, removeFromFavorites, fetchFavorites, isFavorite } = useFavorites();
+
+const cartItem = computed(() => {
+  if (!product.value) return null;
+  return cart.value.find(i => (i.product_id || i.id) === product.value.id) || null;
+});
+
+// Для гостей: инкремент/декремент работают с cartQuantity
+async function incrementCartItem(item) {
+  await increment(item);
+  await fetchCart();
+  await loadDetailedCart();
+}
+
+function decrementCartItem(item) {
+  if (isAuth.value) {
+    decrement(item);
+    loadDetailedCart();
+    return;
+  }
+  if (item.cartQuantity > 1) {
+    let localCart = JSON.parse(localStorage.getItem('cart') || '[]');
+    localCart = localCart.map(i =>
+      (i.id === item.id) ? { ...i, quantity: i.quantity - 1 } : i
+    );
+    localStorage.setItem('cart', JSON.stringify(localCart));
+    fetchCart();
+    loadDetailedCart();
+  } else {
+    // Удалить товар из корзины
+    let localCart = JSON.parse(localStorage.getItem('cart') || '[]');
+    localCart = localCart.filter(i => i.id !== item.id);
+    localStorage.setItem('cart', JSON.stringify(localCart));
+    fetchCart();
+    loadDetailedCart();
+  }
+}
 
 function isItemFavorite(item) {
   const pid = item.product_id || item.id;
@@ -157,11 +203,36 @@ const orderAddress = ref('');
 const orderError = ref('');
 const orderSuccess = ref(false);
 
+
+function onPhoneInput(e) {
+  let val = e.target.value.replace(/[^\d+]/g, '');
+  if (!val.startsWith('+7')) val = '+7' + val.replace(/^\+?7?/, '');
+  if (val.length > 12) val = val.slice(0, 12);
+  orderPhone.value = val;
+}
+
+function isValidEmail(email) {
+  // Простая email-валидация
+  return /^[\w-.]+@[\w-]+\.[a-z]{2,}$/i.test(email);
+}
+
+function onEmailInput(e) {
+  // Можно добавить доп. обработку, если нужно
+}
+
 async function submitOrder() {
   orderError.value = '';
   orderSuccess.value = false;
   if (cart.value.length === 0) {
     orderError.value = 'Корзина пуста';
+    return;
+  }
+  if (!/^\+7\d{10}$/.test(orderPhone.value)) {
+    orderError.value = 'Введите корректный номер телефона в формате +7XXXXXXXXXX';
+    return;
+  }
+  if (!isValidEmail(orderEmail.value)) {
+    orderError.value = 'Введите корректный email';
     return;
   }
   try {

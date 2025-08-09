@@ -16,7 +16,7 @@ async function fetchUserName() {
   if (!id) { userName.value = ''; return; }
   try {
     const res = await axios.get(`/api/user/${id}`);
-    userName.value = res.data.first_name + (res.data.last_name ? ' ' + res.data.last_name : '');
+    userName.value = res.data.first_name;
   } catch { userName.value = ''; }
 }
 
